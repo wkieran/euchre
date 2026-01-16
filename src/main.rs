@@ -43,10 +43,10 @@ impl Suit {
 impl fmt::Display for Suit {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let symbol = match self {
-            Suit::Clubs => "clurrbs",
-            Suit::Diamonds => "diemonds",
-            Suit::Hearts => "hurts",
-            Suit::Spades => "spuds",
+            Suit::Clubs => "c",
+            Suit::Diamonds => "d",
+            Suit::Hearts => "h",
+            Suit::Spades => "s",
         };
         write!(f, "{}", symbol)
     }
@@ -59,7 +59,7 @@ struct Card {
 
 impl fmt::Display for Card {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}", self.suit, self.rank)
+        write!(f, "{}{}", self.rank, self.suit)
     }
 }
 
@@ -68,16 +68,6 @@ enum Team {
     East,
     West,
 }
-
-// impl fmt::Display for Team {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         let s = match self {
-//             Team::East => "east",
-//             Team::West => "west",
-//         };
-//         write!(f, "{}", s)
-//     }
-// }
 
 struct Player {
     id: usize,
@@ -108,6 +98,76 @@ impl fmt::Display for Player {
 
         Ok(())
     }
+}
+
+struct Deck {
+    cards: Vec<Card>,
+}
+
+impl Deck {
+    fn new() {
+        todo!("implement new deck");
+    }
+
+    fn shuffle() {
+        todo!("implement shuffle on existing deck");
+    }
+
+    fn deal() -> Option<Card> {
+        todo!("implement dealing. pop card from vec");
+    }
+
+    fn reveal_top() -> Card {
+        todo!("flip the top card for revealing kitty card. doesn't pop from vec");
+    }
+}
+
+struct Trick {
+    played_cards: Vec<usize, Card> // player ID, Card played
+    lead_suit: Suit,
+    trump_suit: Suit,
+}
+
+impl Trick {
+    fn play_card() {
+        todo!("implement player play card in trick if it's their turn");
+    }
+
+    fn determine_winner() {
+        todo!("determine player winner of trick if trick is over");
+    }
+
+    fn is_complete() {
+        todo!("determine if trick is over");
+    }
+
+    fn clear() {
+        todo!("prepare for next trick");
+    }
+}
+
+enum Phase {
+    Dealing,
+    Bidding,
+    Playing,
+    Scoring,
+}
+
+struct GameState {
+    // players, deck, current trick, tricks won, trump, kitty, 
+    players: [Player; 4],
+    deck: Deck,
+    current_trick: Trick,
+    tricks_won: [usize; 2],
+    trump: Option<Suit>,
+    kitty: Option<Card>,
+    // current phase, current player, dealer
+    current_phase: Phase,
+    current_player: usize,
+    dealer: usize,
+    // team scores, maker team
+    team_scores: [usize; 2],
+    maker_team: Option<Team>,
 }
 
 fn main() {
