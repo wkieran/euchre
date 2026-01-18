@@ -1,5 +1,9 @@
 use std::fmt;
 
+// TODO :
+// - Team struct needs Copy, Clone for easier use
+// - Card struct might need Clone or Copy depending on ownership model
+
 enum Rank {
     Nine = 9,
     Ten = 10,
@@ -78,9 +82,8 @@ struct Player {
     is_going_alone: bool,
 }
 
-// TODO contructor for Player
 impl Player {
-    fn new(&self){
+    fn new(&self, id: usize, team: Team) -> Option<Player>{
         todo!("implement player constructor");
     }
 }
@@ -104,26 +107,27 @@ struct Deck {
     cards: Vec<Card>,
 }
 
+// TODO : Deck methods
 impl Deck {
     fn new() {
         todo!("implement new deck");
     }
 
-    fn shuffle() {
+    fn shuffle(&mut self) {
         todo!("implement shuffle on existing deck");
     }
 
-    fn deal() -> Option<Card> {
+    fn deal(&mut self) -> Option<Card> {
         todo!("implement dealing. pop card from vec");
     }
 
-    fn reveal_top() -> Card {
+    fn reveal_top(&self) -> Card {
         todo!("flip the top card for revealing kitty card. doesn't pop from vec");
     }
 }
 
 struct Trick {
-    played_cards: Vec<usize, Card> // player ID, Card played
+    played_cards: Vec<(usize, Card)>, // player ID, Card played
     lead_suit: Suit,
     trump_suit: Suit,
 }
