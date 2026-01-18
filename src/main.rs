@@ -4,6 +4,7 @@ use std::fmt;
 // - Team struct needs Copy, Clone for easier use
 // - Card struct might need Clone or Copy depending on ownership model
 
+#[derive(PartialOrd, PartialEq, Copy, Clone)]
 enum Rank {
     Nine = 9,
     Ten = 10,
@@ -27,6 +28,7 @@ impl fmt::Display for Rank {
     }
 }
 
+#[derive(PartialEq, Copy, Clone)]
 enum Suit {
     Hearts,
     Diamonds,
@@ -56,6 +58,7 @@ impl fmt::Display for Suit {
     }
 }
 
+#[derive(Copy, Clone)]
 struct Card {
     suit: Suit,
     rank: Rank,
@@ -64,6 +67,34 @@ struct Card {
 impl fmt::Display for Card {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}{}", self.rank, self.suit)
+    }
+}
+
+impl Card {
+    fn beats(self, other_card: Card, trump_suit: Suit, lead_suit: Suit) -> bool {
+        let is_self_trump = self.suit == trump_suit;
+        let is_other_trump = other_card.suit == trump_suit;
+
+        // if one is trump and other is not, return whether this card is trump
+        if is_self_trump != is_other_trump {
+            return is_self_trump;
+        }
+
+        // if both are trump, return highest value
+        if is_self_trump {
+            return self.rank > other_card.rank;
+            // TODO : handle bowers here
+        }
+
+        // neither are trump
+        let is_self_led = self.suit == lead_suit;
+        let is_other_lead = other_card.suit == lead_suit;
+        
+        if is_self_led != is_other_lead {
+            return is_self_led;
+        }
+
+        is_self_led && self.rank > other_card.rank
     }
 }
 
@@ -190,4 +221,19 @@ fn main() {
     };
 
     println!("{}", test_player);
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_non_trump_card_comparison() {
+        let ace_hearts = Card {rank: Rank::Ace, suit: Suit::Hearts};
+        let king_hearts = Card {rank: Rank::King, suit: Suit::Hearts};
+
+        assert!(ace_hearts.beats(king_hearts, Suit::Spades, Suit::Hearts));
+        assert!(!king_hearts.beats(ace_hearts, Suit::Spades, Suit::Hearts));
+    }
 }
