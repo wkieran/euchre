@@ -5,6 +5,7 @@ use std::fmt;
 // - Card struct might need Clone or Copy depending on ownership model
 
 #[derive(PartialOrd, PartialEq, Copy, Clone)]
+#[repr(u8)]
 enum Rank {
     Nine = 9,
     Ten = 10,
@@ -70,31 +71,60 @@ impl fmt::Display for Card {
     }
 }
 
+// TODO : test if this works if the right bower is checked
+fn effective_suit(card: Card, trump_suit: Suit) -> Suit {
+    if card.rank == Rank::Jack && card.suit.same_color(&trump_suit) {
+        return trump_suit;
+    }
+    card.suit
+}
+
+fn effective_rank(card: Card, trump_suit: Suit) -> u8 {
+    if card.rank == Rank::Jack{
+        if card.suit == trump_suit{
+            return 17;
+        }
+        if card.suit.same_color(&trump_suit){
+            return 16;
+        }
+    }
+    return card.rank as u8;
+}
+
 impl Card {
     fn beats(self, other_card: Card, trump_suit: Suit, lead_suit: Suit) -> bool {
-        let is_self_trump = self.suit == trump_suit;
-        let is_other_trump = other_card.suit == trump_suit;
+        let self_is_trump = trump_suit == effective_suit(self, trump_suit);
+        let other_is_trump = trump_suit == effective_suit(other_card, trump_suit);
 
-        // if one is trump and other is not, return whether this card is trump
-        if is_self_trump != is_other_trump {
-            return is_self_trump;
+        // case 1: one is trump, one isn't
+        if self_is_trump && !other_is_trump {
+            return true;
+        }
+        if !self_is_trump && other_is_trump {
+            return false;
         }
 
-        // if both are trump, return highest value
-        if is_self_trump {
+        // case 2: both are trump
+        if self_is_trump && other_is_trump {
+            return effective_rank(self, trump_suit) > effective_rank(other_card, trump_suit);
+        }
+
+        // case 3: neither are trump
+        let self_is_lead = (effective_suit(self, trump_suit) == lead_suit);
+        let other_is_lead = (effective_suit(other_card, trump_suit) == lead_suit);
+
+        if self_is_lead && !other_is_lead {
+            return true;
+        }
+        if !self_is_lead && other_is_lead {
+            return false;
+        }
+
+        if self_is_lead && other_is_lead {
             return self.rank > other_card.rank;
-            // TODO : handle bowers here
         }
 
-        // neither are trump
-        let is_self_led = self.suit == lead_suit;
-        let is_other_lead = other_card.suit == lead_suit;
-        
-        if is_self_led != is_other_lead {
-            return is_self_led;
-        }
-
-        is_self_led && self.rank > other_card.rank
+        return false;
     }
 }
 
@@ -164,7 +194,7 @@ struct Trick {
 }
 
 impl Trick {
-    fn play_card() {
+    fn play_card(&self) {
         todo!("implement player play card in trick if it's their turn");
     }
 
@@ -207,7 +237,10 @@ struct GameState {
 
 fn main() {
     // card struct
-    let test_card = Card{suit: Suit::Spades, rank: Rank::Ace};
+    let test_card = Card{
+        suit: Suit::Spades,
+        rank: Rank::Ace
+    };
     println!("test card : {}\n", test_card);
 
     // player struct
@@ -221,6 +254,13 @@ fn main() {
     };
 
     println!("{}", test_player);
+
+    let test_trick = Trick {
+        played_cards: vec!(),
+        lead_suit: Suit::Spades,
+        trump_suit: Suit::Spades
+    };
+    test_trick.play_card();
 }
 
 #[cfg(test)]
