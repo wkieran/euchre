@@ -133,12 +133,174 @@ mod tests {
 
     use super::*;
 
+    //
+    // Bower tests
+    //
     #[test]
-    fn test_non_trump_card_comparison() {
-        let ace_hearts = Card {rank: Rank::Ace, suit: Suit::Hearts};
-        let king_hearts = Card {rank: Rank::King, suit: Suit::Hearts};
+    fn test_right_bower_beats_trump_ace() {
+        let trump_suit = Suit::Spades;
 
-        assert!(ace_hearts.beats(king_hearts, Suit::Spades, Suit::Hearts));
-        assert!(!king_hearts.beats(ace_hearts, Suit::Spades, Suit::Hearts));
+        let jack_spades = Card {
+            suit: Suit::Spades,
+            rank: Rank::Jack,
+        };
+
+        let ace_spades = Card {
+            suit: Suit::Spades,
+            rank: Rank::Ace,
+        };
+
+        assert!(jack_spades.beats(ace_spades, trump_suit, Suit::Hearts));
+    }
+
+    #[test]
+    fn test_left_bower_beats_trump_ace() {
+        let trump_suit = Suit::Spades;
+
+        let jack_clubs = Card {
+            suit: Suit::Clubs,
+            rank: Rank::Jack,
+        };
+
+        let ace_spades = Card {
+            suit: Suit::Spades,
+            rank: Rank::Ace,
+        };
+
+        assert!(jack_clubs.beats(ace_spades, trump_suit, Suit::Hearts));
+    }
+
+    #[test]
+    fn test_right_bower_beats_left_bower() {
+        let trump_suit = Suit::Spades;
+
+        let jack_spades = Card {
+            suit: Suit::Clubs,
+            rank: Rank::Jack,
+        };
+
+        let jack_clubs = Card {
+            suit: Suit::Spades,
+            rank: Rank::Ace,
+        };
+
+        assert!(jack_spades.beats(jack_clubs, trump_suit, Suit::Hearts));
+    }
+
+    #[test]
+    fn test_left_bower_treated_as_trump() {
+        let trump_suit = Suit::Spades;
+        let lead_suit = Suit::Clubs;
+
+        let jack_clubs = Card {
+            suit: Suit::Clubs,
+            rank: Rank::Jack,
+        };
+
+        let king_clubs = Card {
+            suit: Suit::Clubs,
+            rank: Rank::King,
+        };
+
+        assert!(jack_clubs.beats(king_clubs, trump_suit, lead_suit));
+    }
+
+    //
+    //Trump vs non-trump tests
+    //
+    #[test]
+    fn test_low_trump_beats_high_non_trump() {
+        let trump_suit = Suit::Spades;
+        let lead_suit = Suit::Hearts;
+
+        let nine_spades = Card {
+            suit: Suit::Spades,
+            rank: Rank::Nine,
+        };
+
+        let ace_hearts = Card {
+            suit: Suit::Hearts,
+            rank: Rank::Ace,
+        };
+
+        assert!(nine_spades.beats(ace_hearts, trump_suit, lead_suit));
+    }
+
+    #[test]
+    fn test_trump_beats_off_suit() {
+        let trump_suit = Suit::Spades;
+        let lead_suit = Suit::Hearts;
+
+        let nine_spades = Card {
+            suit: Suit::Spades,
+            rank: Rank::Nine,
+        };
+
+        let ace_diamonds = Card {
+            suit: Suit::Diamonds,
+            rank: Rank::Ace,
+        };
+
+        assert!(nine_spades.beats(ace_diamonds, trump_suit, lead_suit));
+    }
+
+    // 
+    // Lead suit tests
+    //
+    #[test]
+    fn test_lead_suit_beats_off_suit() {
+        let trump_suit = Suit::Spades;
+        let lead_suit = Suit::Hearts;
+
+        let nine_hearts = Card {
+            suit: Suit::Hearts,
+            rank: Rank::Nine,
+        };
+
+        let ace_diamonds = Card {
+            suit: Suit::Diamonds,
+            rank: Rank::Ace,
+        };
+
+        assert!(nine_hearts.beats(ace_diamonds, trump_suit, lead_suit));
+    }
+
+    #[test]
+    fn test_higher_card_wins_when_both_follow_lead() {
+        let trump_suit = Suit::Spades;
+        let lead_suit = Suit::Hearts;
+
+        let ten_hearts = Card {
+            suit: Suit::Spades,
+            rank: Rank::Ten,
+        };
+
+        let nine_hearts = Card {
+            suit: Suit::Spades,
+            rank: Rank::Nine,
+        };
+
+        assert!(ten_hearts.beats(nine_hearts, trump_suit, lead_suit));
+    }
+
+    // 
+    // Edge case
+    //
+    #[test]
+    fn test_both_off_suit_neither_wins() {
+        let trump_suit = Suit::Spades;
+        let lead_suit = Suit::Hearts;
+
+        let ace_diamonds = Card {
+            suit: Suit::Diamonds,
+            rank: Rank::Ace,
+        };
+
+        let king_clubs = Card {
+            suit: Suit::Clubs,
+            rank: Rank::King,
+        };
+
+        assert!(!ace_diamonds.beats(king_clubs, trump_suit, lead_suit));
     }
 }
