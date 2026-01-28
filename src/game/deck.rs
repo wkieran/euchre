@@ -1,13 +1,21 @@
-use super::card::Card;
+use super::card::{Card, Suit, Rank};
+use strum::IntoEnumIterator;
 
 pub struct Deck {
-    cards: Vec<Card>,
+    pub cards: Vec<Card>,
 }
 
 // TODO : Deck methods
 impl Deck {
-    fn new() {
-        todo!("implement new deck");
+    pub fn new() -> Self {
+        // todo!("implement new deck");
+        let mut cards = vec!();
+        for suit in Suit::iter() {
+            for rank in Rank::iter() {
+                cards.push(Card::new(rank, suit));
+            }
+        }
+        Deck { cards }
     }
 
     fn shuffle(&mut self) {
@@ -15,10 +23,21 @@ impl Deck {
     }
 
     fn deal(&mut self) -> Option<Card> {
-        todo!("implement dealing. pop card from vec");
+        return self.cards.pop();
     }
 
-    fn reveal_top(&self) -> Card {
-        todo!("flip the top card for revealing kitty card. doesn't pop from vec");
+    fn reveal_top(&self) -> Option<Card> {
+        return self.cards.last().copied();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    
+    #[test]
+    fn test_shuffling_is_random() {
+        todo!("make 10 shuffled decks and ensure none are the same");
     }
 }

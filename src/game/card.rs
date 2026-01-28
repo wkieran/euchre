@@ -1,10 +1,11 @@
 use std::fmt;
+use strum_macros::EnumIter;
 
 // TODO :
 // - Team struct needs Copy, Clone for easier use
 // - Card struct might need Clone or Copy depending on ownership model
 
-#[derive(PartialOrd, PartialEq, Copy, Clone)]
+#[derive(PartialOrd, PartialEq, Copy, Clone, EnumIter)]
 #[repr(u8)]
 pub enum Rank {
     Nine = 9,
@@ -29,7 +30,7 @@ impl fmt::Display for Rank {
     }
 }
 
-#[derive(PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone, EnumIter)]
 pub enum Suit {
     Hearts,
     Diamonds,
@@ -92,6 +93,13 @@ fn effective_rank(card: Card, trump_suit: Suit) -> u8 {
 }
 
 impl Card {
+    pub fn new(rank: Rank, suit: Suit) -> Self {
+        let new_card = Card {
+            suit: suit,
+            rank: rank,
+        };
+        new_card
+    }
     fn beats(self, other_card: Card, trump_suit: Suit, lead_suit: Suit) -> bool {
         let self_is_trump = trump_suit == effective_suit(self, trump_suit);
         let other_is_trump = trump_suit == effective_suit(other_card, trump_suit);
