@@ -12,7 +12,7 @@ impl Deck {
         let mut cards = vec!();
         for suit in Suit::iter() {
             for rank in Rank::iter() {
-                cards.push(Card::new(rank, suit));
+                cards.push(Card::new(suit, rank));
             }
         }
         Deck { cards }

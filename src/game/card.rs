@@ -93,7 +93,7 @@ fn effective_rank(card: Card, trump_suit: Suit) -> u8 {
 }
 
 impl Card {
-    pub fn new(rank: Rank, suit: Suit) -> Self {
+    pub fn new(suit: Suit, rank: Rank) -> Self {
         let new_card = Card {
             suit: suit,
             rank: rank,
@@ -148,15 +148,8 @@ mod tests {
     fn test_right_bower_beats_trump_ace() {
         let trump_suit = Suit::Spades;
 
-        let jack_spades = Card {
-            suit: Suit::Spades,
-            rank: Rank::Jack,
-        };
-
-        let ace_spades = Card {
-            suit: Suit::Spades,
-            rank: Rank::Ace,
-        };
+        let jack_spades = Card::new(Suit::Spades, Rank::Jack);
+        let ace_spades = Card::new(Suit::Spades,Rank::Ace);
 
         assert!(jack_spades.beats(ace_spades, trump_suit, Suit::Hearts));
     }
@@ -165,15 +158,8 @@ mod tests {
     fn test_left_bower_beats_trump_ace() {
         let trump_suit = Suit::Spades;
 
-        let jack_clubs = Card {
-            suit: Suit::Clubs,
-            rank: Rank::Jack,
-        };
-
-        let ace_spades = Card {
-            suit: Suit::Spades,
-            rank: Rank::Ace,
-        };
+        let jack_clubs = Card::new(Suit::Clubs, Rank::Jack);
+        let ace_spades = Card::new(Suit::Spades, Rank::Ace);
 
         assert!(jack_clubs.beats(ace_spades, trump_suit, Suit::Hearts));
     }
@@ -182,15 +168,8 @@ mod tests {
     fn test_right_bower_beats_left_bower() {
         let trump_suit = Suit::Spades;
 
-        let jack_spades = Card {
-            suit: Suit::Clubs,
-            rank: Rank::Jack,
-        };
-
-        let jack_clubs = Card {
-            suit: Suit::Spades,
-            rank: Rank::Ace,
-        };
+        let jack_spades = Card::new(Suit::Clubs, Rank::Jack);
+        let jack_clubs = Card::new(Suit::Spades, Rank::Ace);
 
         assert!(jack_spades.beats(jack_clubs, trump_suit, Suit::Hearts));
     }
@@ -200,15 +179,8 @@ mod tests {
         let trump_suit = Suit::Spades;
         let lead_suit = Suit::Clubs;
 
-        let jack_clubs = Card {
-            suit: Suit::Clubs,
-            rank: Rank::Jack,
-        };
-
-        let king_clubs = Card {
-            suit: Suit::Clubs,
-            rank: Rank::King,
-        };
+        let jack_clubs = Card::new(Suit::Clubs, Rank::Jack);
+        let king_clubs = Card::new(Suit::Clubs, Rank::King);
 
         assert!(jack_clubs.beats(king_clubs, trump_suit, lead_suit));
     }
@@ -221,15 +193,8 @@ mod tests {
         let trump_suit = Suit::Spades;
         let lead_suit = Suit::Hearts;
 
-        let nine_spades = Card {
-            suit: Suit::Spades,
-            rank: Rank::Nine,
-        };
-
-        let ace_hearts = Card {
-            suit: Suit::Hearts,
-            rank: Rank::Ace,
-        };
+        let nine_spades = Card::new(Suit::Spades, Rank::Nine);
+        let ace_hearts = Card::new(Suit::Hearts, Rank::Ace);
 
         assert!(nine_spades.beats(ace_hearts, trump_suit, lead_suit));
     }
@@ -239,15 +204,8 @@ mod tests {
         let trump_suit = Suit::Spades;
         let lead_suit = Suit::Hearts;
 
-        let nine_spades = Card {
-            suit: Suit::Spades,
-            rank: Rank::Nine,
-        };
-
-        let ace_diamonds = Card {
-            suit: Suit::Diamonds,
-            rank: Rank::Ace,
-        };
+        let nine_spades = Card::new(Suit::Spades, Rank::Nine);
+        let ace_diamonds = Card::new(Suit::Diamonds, Rank::Ace);
 
         assert!(nine_spades.beats(ace_diamonds, trump_suit, lead_suit));
     }
@@ -260,15 +218,8 @@ mod tests {
         let trump_suit = Suit::Spades;
         let lead_suit = Suit::Hearts;
 
-        let nine_hearts = Card {
-            suit: Suit::Hearts,
-            rank: Rank::Nine,
-        };
-
-        let ace_diamonds = Card {
-            suit: Suit::Diamonds,
-            rank: Rank::Ace,
-        };
+        let nine_hearts = Card::new(Suit::Hearts, Rank::Nine);
+        let ace_diamonds = Card::new(Suit::Diamonds, Rank::Ace);
 
         assert!(nine_hearts.beats(ace_diamonds, trump_suit, lead_suit));
     }
@@ -278,15 +229,8 @@ mod tests {
         let trump_suit = Suit::Spades;
         let lead_suit = Suit::Hearts;
 
-        let ten_hearts = Card {
-            suit: Suit::Spades,
-            rank: Rank::Ten,
-        };
-
-        let nine_hearts = Card {
-            suit: Suit::Spades,
-            rank: Rank::Nine,
-        };
+        let ten_hearts = Card::new(Suit::Spades, Rank::Ten);
+        let nine_hearts = Card::new(Suit::Spades, Rank::Nine);
 
         assert!(ten_hearts.beats(nine_hearts, trump_suit, lead_suit));
     }
@@ -299,15 +243,8 @@ mod tests {
         let trump_suit = Suit::Spades;
         let lead_suit = Suit::Hearts;
 
-        let ace_diamonds = Card {
-            suit: Suit::Diamonds,
-            rank: Rank::Ace,
-        };
-
-        let king_clubs = Card {
-            suit: Suit::Clubs,
-            rank: Rank::King,
-        };
+        let ace_diamonds = Card::new(Suit::Diamonds, Rank::Ace);
+        let king_clubs = Card::new(Suit::Clubs, Rank::King);
 
         assert!(!ace_diamonds.beats(king_clubs, trump_suit, lead_suit));
     }
