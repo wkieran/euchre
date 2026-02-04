@@ -5,7 +5,7 @@ use strum_macros::EnumIter;
 // - Team struct needs Copy, Clone for easier use
 // - Card struct might need Clone or Copy depending on ownership model
 
-#[derive(PartialOrd, PartialEq, Copy, Clone, EnumIter)]
+#[derive(PartialOrd, PartialEq, Copy, Clone, EnumIter, Debug)]
 #[repr(u8)]
 pub enum Rank {
     Nine = 9,
@@ -30,7 +30,7 @@ impl fmt::Display for Rank {
     }
 }
 
-#[derive(PartialEq, Copy, Clone, EnumIter)]
+#[derive(PartialEq, Copy, Clone, EnumIter, Debug)]
 pub enum Suit {
     Hearts,
     Diamonds,
@@ -60,10 +60,10 @@ impl fmt::Display for Suit {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Card {
-    suit: Suit,
-    rank: Rank,
+    pub suit: Suit,
+    pub rank: Rank,
 }
 
 impl fmt::Display for Card {
@@ -73,7 +73,7 @@ impl fmt::Display for Card {
 }
 
 // TODO : test if this works if the right bower is checked
-fn effective_suit(card: Card, trump_suit: Suit) -> Suit {
+pub fn effective_suit(card: Card, trump_suit: Suit) -> Suit {
     if card.rank == Rank::Jack && card.suit.same_color(&trump_suit) {
         return trump_suit;
     }
@@ -100,7 +100,7 @@ impl Card {
         };
         new_card
     }
-    fn beats(self, other_card: Card, trump_suit: Suit, lead_suit: Suit) -> bool {
+    pub fn beats(self, other_card: Card, trump_suit: Suit, lead_suit: Suit) -> bool {
         let self_is_trump = trump_suit == effective_suit(self, trump_suit);
         let other_is_trump = trump_suit == effective_suit(other_card, trump_suit);
 

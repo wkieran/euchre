@@ -1,6 +1,9 @@
 use super::card::{Card, Suit, Rank};
 use strum::IntoEnumIterator;
+use rand::rng;
+use rand::seq::SliceRandom;
 
+#[derive(Debug, PartialEq)]
 pub struct Deck {
     pub cards: Vec<Card>,
 }
@@ -18,16 +21,16 @@ impl Deck {
         Deck { cards }
     }
 
-    fn shuffle(&mut self) {
-        todo!("implement shuffle on existing deck");
+    pub fn shuffle(&mut self) {
+        self.cards.shuffle(&mut rng());
     }
 
     fn deal(&mut self) -> Option<Card> {
-        return self.cards.pop();
+        self.cards.pop()
     }
 
     fn reveal_top(&self) -> Option<Card> {
-        return self.cards.last().copied();
+        self.cards.last().copied()
     }
 }
 
@@ -38,6 +41,10 @@ mod tests {
     
     #[test]
     fn test_shuffling_is_random() {
-        todo!("make 10 shuffled decks and ensure none are the same");
+        let mut new_deck = Deck::new();
+        let before_shuffle = new_deck.cards[0];
+        new_deck.shuffle();
+        let after_shuffle = new_deck.cards[0];
+        assert_ne!(before_shuffle, after_shuffle);
     }
 }

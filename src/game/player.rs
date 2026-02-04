@@ -16,6 +16,20 @@ pub struct Player {
     is_going_alone: bool,
 }
 
+impl Player {
+    pub fn new(id: usize, team: Team) -> Self {
+        let mut player = Player {
+            id: id,
+            hand: vec!(),
+            team: team,
+            is_dealer: false,
+            tricks_won: 0,
+            is_going_alone: false,
+        };
+        player
+    }
+}
+
 impl fmt::Display for Player {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Player {} (Team {:?}): ", self.id, self.team)?;
