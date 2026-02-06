@@ -79,6 +79,9 @@ mod tests {
         game_state.new_deal();
         for (i, player) in game_state.players.iter().enumerate() {
             println!("{}", player);
+            assert_eq!(player.hand.len(), 5);
         }
+        assert_eq!(game_state.deck.cards.len(), 4);
+        // TODO : add a test for unique player hands. it's just printed rn which is p good.
     }
 }
