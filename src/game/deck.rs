@@ -32,7 +32,7 @@ impl Deck {
         Some(self.cards.drain(..count).collect())
     }
 
-    fn reveal_top(&self) -> Option<Card> {
+    pub fn reveal_top(&self) -> Option<Card> {
         self.cards.last().copied()
     }
 }

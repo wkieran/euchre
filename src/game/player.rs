@@ -13,7 +13,7 @@ pub struct Player {
     team: Team,
     is_dealer: bool,
     tricks_won: usize,
-    is_going_alone: bool,
+    pub is_going_alone: bool,
 }
 
 impl Player {
