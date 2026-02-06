@@ -25,8 +25,11 @@ impl Deck {
         self.cards.shuffle(&mut rng());
     }
 
-    fn deal(&mut self) -> Option<Card> {
-        self.cards.pop()
+    pub fn deal(&mut self, count: usize) -> Option<Vec<Card>> {
+        if count > self.cards.len() {
+            return None;
+        }
+        Some(self.cards.drain(..count).collect())
     }
 
     fn reveal_top(&self) -> Option<Card> {

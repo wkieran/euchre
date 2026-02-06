@@ -55,13 +55,17 @@ impl GameState {
     }
 
     fn new_deal(&mut self) {
-        let mut new_deck = Deck::new();
-        new_deck.shuffle();
-
+        self.deck.shuffle();
+        println!("test test");
         // when dealing, to make it 2-3-2-3 make +1 based on i % 2
-        // for player in self.players.iter().enumerate() {
-        //     println!("{}", player);
-        // }
+        // 0:0-2, 1:3:4, 2:5-7, 3:8-9
+        for x in 0..2 {
+            for (i, player) in self.players.iter_mut().enumerate() {
+                let count = if x == 0 { 2 + (i % 2) } else { 3 - (i % 2)};
+                let new_cards = self.deck.deal(count).unwrap();
+                player.hand.extend(new_cards);
+            }
+        }
     }
 }
 
@@ -72,5 +76,9 @@ mod tests {
     #[test]
     fn test_new_deal(){
         let mut game_state = GameState::new();
+        game_state.new_deal();
+        for (i, player) in game_state.players.iter().enumerate() {
+            println!("{}", player);
+        }
     }
 }

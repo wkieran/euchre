@@ -9,7 +9,7 @@ pub enum Team {
 
 pub struct Player {
     id: usize,
-    hand: Vec<Card>,
+    pub hand: Vec<Card>,
     team: Team,
     is_dealer: bool,
     tricks_won: usize,
