@@ -4,9 +4,12 @@ use super::deck::Deck;
 use super::trick::Trick;
 
 // === Enums ===
+#[derive(PartialEq, Debug)]
 pub enum Phase {
     Dealing,
     Bidding,
+    Discarding,
+    StuckDealer,
     Playing,
     Scoring,
 }
@@ -92,13 +95,13 @@ impl GameState {
         match bid {
             BidAction::Pass => {
                 self.bids_passed += 1;
-                self.current_bidder = (self.current_bidder + 1) % 4;
                 if self.bids_passed == 4 && self.bidding_round == 1 {
                     self.bids_passed = 0;
                     self.bidding_round = 2;
-                } else if self.bids_passed == 3 && self.bidding_round == 2 {
-                    // TODO : dealer must call!!
+                } else if self.bids_passed == 4 && self.bidding_round == 2 {
+                    self.current_phase = Phase::StuckDealer;
                 }
+                self.current_bidder = (self.current_bidder + 1) % 4;
             },
             BidAction::OrderUp | BidAction::OrderUpAlone => {
                 assert_eq!(self.bidding_round, 1, "cannot order up in round 2!!");
@@ -112,13 +115,13 @@ impl GameState {
                 assert_ne!(suit, self.kitty.unwrap().suit, "Cannot call the same suit as Kitty!!");
                 self.trump = Some(suit);
                 self.set_maker_and_adavance(matches!(bid, BidAction::CallSuitAlone(_)));
+                self.current_phase = Phase::Playing;
             },
         }
     }
 
     fn set_maker_and_adavance(&mut self, going_alone: bool) {
         self.maker_team = Some(if self.current_bidder % 2 == 0 { Team::East } else { Team::West });
-        self.current_phase = Phase::Playing;
         if going_alone {
             self.players[self.current_bidder].is_going_alone = true;
         }
@@ -126,10 +129,23 @@ impl GameState {
 
     fn dealer_pickup(&mut self) {
         // self.players[self.dealer].hand.extend(vec![self.kitty]);
-        self.players[self.dealer].hand.extend(self.deck.deal(1).unwrap()); // TODO maybe use
-                                                                           // .take() instead of
-                                                                           // extend
-        // TODO : dealer discards one card
+        self.players[self.dealer].hand.push(self.kitty.unwrap());
+        self.current_phase = Phase::Discarding;
+    }
+
+    fn submit_discard(&mut self, card_index: usize) {
+        assert_eq!(self.current_phase, Phase::Discarding);
+        self.players[self.dealer].hand.remove(card_index);
+        assert_eq!(self.players[self.dealer].hand.len(), 5);
+        self.current_phase = Phase::Playing;
+    }
+
+    fn submit_stuck_call(&mut self, suit: Suit) {
+        assert_eq!(self.current_phase, Phase::StuckDealer);
+        assert_ne!(suit, self.kitty.unwrap().suit);
+        self.trump = Some(suit);
+        self.set_maker_and_adavance(false);
+        self.current_phase = Phase::Playing;
     }
 
     // --- playing ---
@@ -183,4 +199,7 @@ mod tests {
         // game_state.submit_bid(BidAction::CallSuit(Suit::Hearts));
         //
     }
+    // TODO : 
+    // - test_submit_discard()
+    // - test entire bidding phase stuff
 }
