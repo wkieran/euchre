@@ -70,7 +70,6 @@ impl GameState {
     // --- dealing ---
     fn new_deal(&mut self) {
         self.deck.shuffle();
-        println!("test test");
         // when dealing, to make it 2-3-2-3 make +1 based on i % 2
         // 0:0-2, 1:3:4, 2:5-7, 3:8-9
         for x in 0..2 {
@@ -174,7 +173,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_new_deal(){
+    fn test_new_deal() {
         let mut game_state = GameState::new();
         game_state.new_deal();
         for (i, player) in game_state.players.iter().enumerate() {
@@ -183,5 +182,28 @@ mod tests {
         }
         assert_eq!(game_state.deck.cards.len(), 4);
         // TODO : add a test for unique player hands. it's just printed rn which is p good.
+    }
+
+    #[test]
+    fn test_submit_bid() {
+        let mut game_state = GameState::new();
+        game_state.new_deal();
+        game_state.start_bidding();
+        assert!(game_state.kitty.is_some());
+        assert!(game_state.bidding_round == 1);
+        assert!(game_state.current_bidder == 1);
+
+        // TODO : finish testing submit_bid()
+        //
+        // game_state.submit_bid(BidAction::Pass);
+        // game_state.submit_bid(BidAction::Pass);
+        // game_state.submit_bid(BidAction::Pass);
+        // game_state.submit_bid(BidAction::Pass);
+        // game_state.submit_bid(BidAction::Pass);
+        // assert_eq!(bids_passed, 5);
+        // assert_eq!(current_bidder, 6);
+        //
+        // game_state.submit_bid(BidAction::CallSuit(Suit::Hearts));
+        //
     }
 }
