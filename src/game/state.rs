@@ -100,50 +100,27 @@ impl GameState {
                     // TODO : dealer must call!!
                 }
             },
-            BidAction::OrderUp => {
-                if self.bidding_round == 2 {
-                    panic!("cannot order up in round 2!!");
-                }
+            BidAction::OrderUp | BidAction::OrderUpAlone => {
+                assert_eq!(self.bidding_round, 1, "cannot order up in round 2!!");
                 self.trump = Some(self.kitty.unwrap().suit);
-                self.maker_team = if self.current_bidder % 2 == 0 { Some(Team::East) } else { Some(Team::West) };
+                self.set_maker_and_adavance(matches!(bid, BidAction::OrderUpAlone));
                 self.dealer_pickup();
-                self.current_phase = Phase::Playing;
-            },
-            BidAction::OrderUpAlone => {
-                if self.bidding_round == 2 {
-                    panic!("cannot order up in round 2!!");
-                }
-                self.trump = Some(self.kitty.unwrap().suit);
-                self.maker_team = if self.current_bidder % 2 == 0 { Some(Team::East) } else { Some(Team::West) };
-                self.dealer_pickup();
-                self.current_phase = Phase::Playing;
-                self.players[self.current_bidder].is_going_alone = true;
-            },
-            BidAction::CallSuit(suit) => {
-                if self.bidding_round == 1 {
-                    panic!("cannot call suit in round 1!!");
-                }
-                if suit == self.kitty.unwrap().suit {
-                    panic!("cannot call same suit as kitty!!");
-                }
 
-                self.trump = Some(suit);
-                self.maker_team = if self.current_bidder % 2 == 0 { Some(Team::East) } else { Some(Team::West) };
-                self.current_phase = Phase::Playing
             },
-            BidAction::CallSuitAlone(suit) => {
-                if self.bidding_round == 1 {
-                    panic!("cannot call suit in round 1!!");
-                }
-                if suit == self.kitty.unwrap().suit {
-                    panic!("cannot call same suit as kitty!!");
-                }
+            BidAction::CallSuit(suit) | BidAction::CallSuitAlone(suit) => {
+                assert_eq!(self.bidding_round, 2, "Cannot call suit in round 1!!");
+                assert_ne!(suit, self.kitty.unwrap().suit, "Cannot call the same suit as Kitty!!");
+                self.trump = Some(suit);
+                self.set_maker_and_adavance(matches!(bid, BidAction::CallSuitAlone(_)));
+            },
+        }
+    }
 
-                self.trump = Some(suit);
-                self.maker_team = if self.current_bidder % 2 == 0 { Some(Team::East) } else { Some(Team::West) };
-                self.current_phase = Phase::Playing;
-                self.players[self.current_bidder].is_going_alone = true;
-            },
+    fn set_maker_and_adavance(&mut self, going_alone: bool) {
+        self.maker_team = Some(if self.current_bidder % 2 == 0 { Team::East } else { Team::West });
+        self.current_phase = Phase::Playing;
+        if going_alone {
+            self.players[self.current_bidder].is_going_alone = true;
         }
     }
 
