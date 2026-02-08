@@ -1,16 +1,17 @@
 use std::fmt;
 use super::card::Card;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, Copy)]
+#[repr(usize)]
 pub enum Team {
-    East,
-    West,
+    East, // = 0
+    West, // = 1
 }
 
 pub struct Player {
     id: usize,
     pub hand: Vec<Card>,
-    team: Team,
+    pub team: Team,
     is_dealer: bool,
     tricks_won: usize,
     pub is_going_alone: bool,

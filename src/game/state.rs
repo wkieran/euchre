@@ -1,4 +1,4 @@
-use super::card::{Card, Rank, Suit};
+use super::card::{Card, Rank, Suit, effective_suit};
 use super::player::{Player, Team};
 use super::deck::Deck;
 use super::trick::Trick;
@@ -12,6 +12,7 @@ pub enum Phase {
     StuckDealer,
     Playing,
     Scoring,
+    GameOver,
 }
 enum BidAction {
     Pass,
@@ -149,16 +150,83 @@ impl GameState {
     }
 
     // --- playing ---
-    // loop through 5 tricks, track who wins each
+    fn next_player(&mut self, from: usize) {
+    // Find who's sitting out: partner of the player going alone
+    let sitting_out = self.players.iter().position(|p| p.is_going_alone).map(|n| (n + 2) % 4);
+
+    let mut next = (from + 1) % 4;
+    if sitting_out == Some(next) {
+        next = (from + 2) % 4;
+    }
+    self.current_player = next;
+}
+
+    fn play_card(&mut self, player_id: usize, card_index: usize) {
+        assert_eq!(self.current_phase, Phase::Playing);
+        assert_eq!(player_id, self.current_player);
+
+        let card_to_play = self.players[player_id].hand[card_index];
+
+        if self.current_trick.played_cards.len() > 0 {
+            for (i, card) in self.players[player_id].hand.iter().enumerate() {
+                if effective_suit(*card, self.trump.unwrap()) != self.current_trick.lead_suit.unwrap() && i == card_index {
+                    panic!("Player is trying to reneg!");
+                }
+            }
+        }
+        
+        self.players[player_id].hand.remove(card_index);
+        self.current_trick.play_card(player_id, card_to_play, self.trump.unwrap());
+    }
+
+    fn handle_trick(&mut self) {
+        if !self.current_trick.is_complete(self.players.iter().any(|p| p.is_going_alone)) {
+            self.next_player(self.current_player);
+        }
+        else {
+            let winner = self.current_trick.determine_winner(self.trump.unwrap());
+            let winning_team = winner % 2;
+            self.tricks_won[winning_team] += 1;
+            self.current_trick.clear();
+            let tricks_played = self.tricks_won[0] + self.tricks_won[1];
+            if tricks_played == 5 {
+                self.current_phase = Phase::Scoring;
+            } else {
+                self.current_player = winner;
+            }
+        }
+    }
     
     // --- scoring ---
     // count tricks, score points
+    fn score_round(&mut self) {
+        let maker = self.maker_team.unwrap() as usize;
+        let defender = 1 - maker;
+        let maker_wins = self.tricks_won[maker];
+        let defender_wins = self.tricks_won[defender];
 
-    // --- controller ---
-    fn controller() {
-        todo!("State machine controller for the entire game");
+        match maker_wins {
+            5 => {
+                if self.players.iter().any(|p| p.is_going_alone && p.team as usize == maker) {
+                    self.team_scores[maker] += 4;
+                } else {
+                    self.team_scores[maker] += 2;
+                }
+            },
+            3..=4 => {
+                self.team_scores[maker] += 1;
+            },
+            0..=2 => {
+                self.team_scores[defender] += 2;
+            }
+            _ => unreachable!()
+        }
+        if self.team_scores[0] >= 10 || self.team_scores[1] >= 10 {
+            self.current_phase = Phase::GameOver;
+        } else {
+            self.dealer = (self.dealer + 1) % 4;
+        }
     }
-
 }
 
 #[cfg(test)]

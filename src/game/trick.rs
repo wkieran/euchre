@@ -1,8 +1,8 @@
 use super::card::{Card, Suit, effective_suit};
 
 pub struct Trick {
-    played_cards: Vec<(usize, Card)>, // player ID, Card played
-    lead_suit: Option<Suit>,
+    pub played_cards: Vec<(usize, Card)>, // player ID, Card played
+    pub lead_suit: Option<Suit>,
 }
 
 impl Trick {
@@ -14,7 +14,7 @@ impl Trick {
         trick
     }
 
-    fn play_card(&mut self, player_id: usize, card: Card, trump_suit: Suit) {
+    pub fn play_card(&mut self, player_id: usize, card: Card, trump_suit: Suit) {
         if self.played_cards.len() == 0 {
             self.lead_suit = Some(effective_suit(card, trump_suit));
         }
@@ -23,7 +23,7 @@ impl Trick {
 
     }
 
-    fn determine_winner(&self, trump_suit: Suit) -> usize {
+    pub fn determine_winner(&self, trump_suit: Suit) -> usize {
        let mut winner = self.played_cards[0];
        for (player_id, card) in &self.played_cards {
            if card.beats(winner.1, trump_suit, self.lead_suit.unwrap()) {
@@ -33,7 +33,7 @@ impl Trick {
        winner.0
     }
 
-    fn is_complete(&self, going_alone: bool) -> bool {
+    pub fn is_complete(&self, going_alone: bool) -> bool {
         if going_alone && self.played_cards.len() == 3 {
             return true;
         }
@@ -43,7 +43,7 @@ impl Trick {
         false
     }
 
-    fn clear(&mut self) {
+    pub fn clear(&mut self) {
         self.played_cards.clear();
         self.lead_suit = None;
     }
