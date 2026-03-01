@@ -162,16 +162,25 @@ impl GameState {
 }
 
     fn play_card(&mut self, player_id: usize, card_index: usize) {
+        assert!(player_id < 4);
         assert_eq!(self.current_phase, Phase::Playing);
         assert_eq!(player_id, self.current_player);
 
         let card_to_play = self.players[player_id].hand[card_index];
 
-        if self.current_trick.played_cards.len() > 0 {
+        if self.current_trick.played_cards.len() > 0 { // if the current player is not the first in
+                                                       // the trick
+            let mut has_lead_suit = false;
             for (i, card) in self.players[player_id].hand.iter().enumerate() {
-                if effective_suit(*card, self.trump.unwrap()) != self.current_trick.lead_suit.unwrap() && i == card_index {
-                    panic!("Player is trying to reneg!");
+                let card_effective_suit = effective_suit(*card, self.trump.unwrap());
+                if card_effective_suit == self.current_trick.lead_suit.unwrap() {
+                    has_lead_suit = true;
                 }
+            }
+
+            let playing_non_lead_suit = effective_suit(card_to_play, self.trump.unwrap()) != self.current_trick.lead_suit.unwrap();
+            if playing_non_lead_suit && has_lead_suit {
+                panic!("Player is trying to reneg!");
             }
         }
         
@@ -237,7 +246,7 @@ mod tests {
     fn test_new_deal() {
         let mut game_state = GameState::new();
         game_state.new_deal();
-        for (i, player) in game_state.players.iter().enumerate() {
+        for (_, player) in game_state.players.iter().enumerate() {
             println!("{}", player);
             assert_eq!(player.hand.len(), 5);
         }
@@ -267,6 +276,155 @@ mod tests {
         // game_state.submit_bid(BidAction::CallSuit(Suit::Hearts));
         //
     }
+
+    #[test]
+    fn test_new_hand() {
+        let mut game_state =  GameState::new();
+
+        let player_0_cards = vec![
+            Card::new(Suit::Clubs, Rank::Ace),
+            Card::new(Suit::Spades, Rank::Ace),
+            Card::new(Suit::Hearts, Rank::Jack), 
+            Card::new(Suit::Hearts, Rank::Nine),
+            Card::new(Suit::Clubs, Rank::Jack),
+        ];
+        game_state.players[0].hand.extend(player_0_cards);
+ 
+        let player_1_cards = vec![
+            Card::new(Suit::Hearts, Rank::Ace),
+            Card::new(Suit::Spades, Rank::Nine),
+            Card::new(Suit::Diamonds, Rank::Ace), 
+            Card::new(Suit::Clubs, Rank::Queen),
+            Card::new(Suit::Spades, Rank::Ten),
+        ];
+        game_state.players[1].hand.extend(player_1_cards);
+
+        let player_2_cards = vec![
+            Card::new(Suit::Spades, Rank::Queen),
+            Card::new(Suit::Spades, Rank::Jack),
+            Card::new(Suit::Clubs, Rank::King), 
+            Card::new(Suit::Diamonds, Rank::Jack),
+            Card::new(Suit::Hearts, Rank::King),
+        ];
+        game_state.players[2].hand.extend(player_2_cards);
+
+        let player_3_cards = vec![
+            Card::new(Suit::Diamonds, Rank::Nine),
+            Card::new(Suit::Hearts, Rank::Queen),
+            Card::new(Suit::Hearts, Rank::Ten), 
+            Card::new(Suit::Diamonds, Rank::Queen),
+            Card::new(Suit::Clubs, Rank::Ten),
+        ];
+        game_state.players[3].hand.extend(player_3_cards);
+
+        game_state.trump = Some(Suit::Spades);
+        game_state.maker_team = Some(Team::East);
+        game_state.current_phase = Phase::Playing;
+        game_state.current_player = 1;
+
+        // Trick 1
+        game_state.play_card(1, 3); //plays queen of clubs
+        game_state.handle_trick();
+        game_state.play_card(2, 2); //plays king of clubs
+        game_state.handle_trick();
+        game_state.play_card(3, 4); //plays ten of clubs
+        game_state.handle_trick();
+        game_state.play_card(0, 0); //plays ace of clubs
+        game_state.handle_trick();
+
+        // now the hands:
+        // player 0: SpA, HeJ, HeN, ClJ
+        // player 1: HeA, SpN, DiA, SpT
+        // player 2: SpQ, SpJ, DiJ, HeK
+        // player 3: DiN, HeQ, HeT, DiQ
+
+        let correct_trick_score = [1, 0];
+        assert_eq!(game_state.tricks_won, correct_trick_score);
+        assert_eq!(game_state.current_player, 0);
+
+        // Trick 2
+        game_state.play_card(0, 1); //plays jack of hearts
+        game_state.handle_trick();
+        game_state.play_card(1, 0); //plays ace of hearts
+        game_state.handle_trick();
+        game_state.play_card(2, 3); //plays king of hearts
+        game_state.handle_trick();
+        game_state.play_card(3, 2); //plays ten of hearts 
+        game_state.handle_trick();
+
+        // now the hands:
+        // player 0: SpA, HeN, ClJ
+        // player 1: SpN, DiA, SpT
+        // player 2: SpQ, SpJ, DiJ
+        // player 3: DiN, HeQ, DiQ
+
+        let correct_trick_score = [1, 1];
+        assert_eq!(game_state.tricks_won, correct_trick_score);
+        assert_eq!(game_state.current_player, 1);
+
+        // Trick 3
+        game_state.play_card(1, 0); //plays nine of spades
+        game_state.handle_trick();
+        game_state.play_card(2, 0); //plays queen of spades
+        game_state.handle_trick();
+        game_state.play_card(3, 0); //plays nine of diamonds
+        game_state.handle_trick();
+        game_state.play_card(0, 2); //plays ace of spades
+        game_state.handle_trick();
+
+        // now the hands:
+        // player 0: HeN, ClJ
+        // player 1: DiA, SpT
+        // player 2: SpJ, DiJ
+        // player 3: HeQ, DiQ
+
+        let correct_trick_score = [2, 1];
+        assert_eq!(game_state.tricks_won, correct_trick_score);
+        assert_eq!(game_state.current_player, 0);
+
+        // Trick 4
+        game_state.play_card(0, 1); //plays jack of clubs
+        game_state.handle_trick();
+        game_state.play_card(1, 1); //plays ten of spades
+        game_state.handle_trick();
+        game_state.play_card(2, 0); //plays jack of spades
+        game_state.handle_trick();
+        game_state.play_card(3, 0); //plays queen of hearts
+        game_state.handle_trick();
+
+        // now the hands:
+        // player 0: HeN
+        // player 1: DiA
+        // player 2: DiJ
+        // player 3: DiQ
+
+        let correct_trick_score = [3, 1];
+        assert_eq!(game_state.tricks_won, correct_trick_score);
+        assert_eq!(game_state.current_player, 2);
+
+        // Trick 5
+        game_state.play_card(2, 0); //plays nine of hearts
+        game_state.handle_trick();
+        game_state.play_card(3, 0); //plays ace of diamonds
+        game_state.handle_trick();
+        game_state.play_card(0, 0); //plays jack of diamonds
+        game_state.handle_trick();
+        game_state.play_card(1, 0); //plays queen of Diamonds
+        game_state.handle_trick();
+
+        let correct_trick_score = [4, 1];
+        assert_eq!(game_state.tricks_won, correct_trick_score);
+        assert_eq!(game_state.current_player, 2);
+
+        assert_eq!(game_state.current_phase, Phase::Scoring);
+
+        game_state.score_round();
+        let correct_team_score = [1, 0];
+        assert_eq!(game_state.team_scores, correct_team_score);
+
+        assert_eq!(game_state.current_phase, Phase::Dealing);
+    }
+
     // TODO : 
     // - test_submit_discard()
     // - test entire bidding phase stuff
