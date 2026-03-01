@@ -46,7 +46,7 @@ pub struct GameState {
 
 // === Impl Blocks ===
 impl GameState {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let mut game_state = GameState{
             players: [
                 Player::new(0, Team::East),
@@ -72,7 +72,7 @@ impl GameState {
     }
 
     // --- dealing ---
-    fn new_deal(&mut self) {
+    pub fn new_deal(&mut self) {
         self.deck.shuffle();
         // when dealing, to make it 2-3-2-3 make +1 based on i % 2
         // 0:0-2, 1:3:4, 2:5-7, 3:8-9
@@ -86,13 +86,13 @@ impl GameState {
     }
 
     // --- bidding ---
-    fn start_bidding(&mut self) {
+    pub fn start_bidding(&mut self) {
         self.kitty = self.deck.reveal_top();
         self.bidding_round = 1;
         self.current_bidder = (self.dealer + 1) % 4;
     }
 
-    fn submit_bid(&mut self, bid: BidAction) {
+    pub fn submit_bid(&mut self, bid: BidAction) {
         match bid {
             BidAction::Pass => {
                 self.bids_passed += 1;
@@ -161,7 +161,7 @@ impl GameState {
     self.current_player = next;
 }
 
-    fn play_card(&mut self, player_id: usize, card_index: usize) {
+    pub fn play_card(&mut self, player_id: usize, card_index: usize) {
         assert!(player_id < 4);
         assert_eq!(self.current_phase, Phase::Playing);
         assert_eq!(player_id, self.current_player);
@@ -188,7 +188,7 @@ impl GameState {
         self.current_trick.play_card(player_id, card_to_play, self.trump.unwrap());
     }
 
-    fn handle_trick(&mut self) {
+    pub fn handle_trick(&mut self) {
         if !self.current_trick.is_complete(self.players.iter().any(|p| p.is_going_alone)) {
             self.next_player(self.current_player);
         }
@@ -198,17 +198,16 @@ impl GameState {
             self.tricks_won[winning_team] += 1;
             self.current_trick.clear();
             let tricks_played = self.tricks_won[0] + self.tricks_won[1];
+            self.current_player = winner;
             if tricks_played == 5 {
                 self.current_phase = Phase::Scoring;
-            } else {
-                self.current_player = winner;
             }
         }
     }
     
     // --- scoring ---
     // count tricks, score points
-    fn score_round(&mut self) {
+    pub fn score_round(&mut self) {
         let maker = self.maker_team.unwrap() as usize;
         let defender = 1 - maker;
         let maker_wins = self.tricks_won[maker];
@@ -234,6 +233,7 @@ impl GameState {
             self.current_phase = Phase::GameOver;
         } else {
             self.dealer = (self.dealer + 1) % 4;
+            self.current_phase = Phase::Dealing;
         }
     }
 }
@@ -320,7 +320,7 @@ mod tests {
         game_state.trump = Some(Suit::Spades);
         game_state.maker_team = Some(Team::East);
         game_state.current_phase = Phase::Playing;
-        game_state.current_player = 1;
+        game_state.current_player = 1; // dealer was 0, first to play is 1
 
         // Trick 1
         game_state.play_card(1, 3); //plays queen of clubs
@@ -369,7 +369,7 @@ mod tests {
         game_state.handle_trick();
         game_state.play_card(3, 0); //plays nine of diamonds
         game_state.handle_trick();
-        game_state.play_card(0, 2); //plays ace of spades
+        game_state.play_card(0, 0); //plays ace of spades
         game_state.handle_trick();
 
         // now the hands:
@@ -403,18 +403,18 @@ mod tests {
         assert_eq!(game_state.current_player, 2);
 
         // Trick 5
-        game_state.play_card(2, 0); //plays nine of hearts
+        game_state.play_card(2, 0); //plays jack of diamonds
         game_state.handle_trick();
-        game_state.play_card(3, 0); //plays ace of diamonds
+        game_state.play_card(3, 0); //plays queen of diamonds
         game_state.handle_trick();
-        game_state.play_card(0, 0); //plays jack of diamonds
+        game_state.play_card(0, 0); //plays nine of hearts
         game_state.handle_trick();
-        game_state.play_card(1, 0); //plays queen of Diamonds
+        game_state.play_card(1, 0); //plays ace of Diamonds
         game_state.handle_trick();
 
-        let correct_trick_score = [4, 1];
+        let correct_trick_score = [3, 2];
         assert_eq!(game_state.tricks_won, correct_trick_score);
-        assert_eq!(game_state.current_player, 2);
+        assert_eq!(game_state.current_player, 1);
 
         assert_eq!(game_state.current_phase, Phase::Scoring);
 

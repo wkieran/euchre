@@ -24,8 +24,13 @@ impl Trick {
     }
 
     pub fn determine_winner(&self, trump_suit: Suit) -> usize {
-       let mut winner = self.played_cards[0];
-       for (player_id, card) in &self.played_cards {
+        println!("enter determine_winner:");
+        for (id, card) in self.played_cards.iter() {
+            print!("id:{},card:{}   ", id,  card);
+        }
+        println!("");
+        let mut winner = self.played_cards[0];
+        for (player_id, card) in &self.played_cards {
            if card.beats(winner.1, trump_suit, self.lead_suit.unwrap()) {
                winner = (*player_id, *card);
            }
