@@ -4,7 +4,7 @@ use super::deck::Deck;
 use super::trick::Trick;
 
 // === Enums ===
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum Phase {
     Dealing,
     Bidding,
@@ -14,7 +14,7 @@ pub enum Phase {
     Scoring,
     GameOver,
 }
-enum BidAction {
+pub enum BidAction {
     Pass,
     OrderUp,
     OrderUpAlone,
@@ -25,19 +25,19 @@ enum BidAction {
 // === Structs ===
 pub struct GameState {
     // players, deck, current trick, tricks won, trump, kitty, 
-    players: [Player; 4],
+    pub players: [Player; 4],
     deck: Deck,
     current_trick: Trick,
-    tricks_won: [usize; 2],
-    trump: Option<Suit>,
-    kitty: Option<Card>,
+    pub tricks_won: [usize; 2],
+    pub trump: Option<Suit>,
+    pub kitty: Option<Card>,
     // current phase, current player, dealer
-    current_phase: Phase,
-    current_player: usize,
+    pub current_phase: Phase,
+    pub current_player: usize,
     dealer: usize,
     // team scores, maker team
-    team_scores: [usize; 2],
-    maker_team: Option<Team>,
+    pub team_scores: [usize; 2],
+    pub maker_team: Option<Team>,
     // bidding state
     bidding_round: usize,
     current_bidder: usize,

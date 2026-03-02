@@ -3,6 +3,7 @@ pub mod player;
 pub mod deck;
 pub mod trick;
 pub mod state;
+pub mod controller;
 
 pub use card::{Card, Rank, Suit};
 pub use player::{Player, Team};
