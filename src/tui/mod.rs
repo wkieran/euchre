@@ -1,10 +1,11 @@
-mod home;
-mod dealing;
 mod bidding;
-mod trickplay;
-mod scoring;
+mod dealing;
 mod gameover;
+mod home;
+mod scoring;
+mod trickplay;
 
+use crate::app::{App, Page};
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
@@ -12,7 +13,6 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
 };
-use crate::app::{App, Page};
 
 pub fn render(frame: &mut Frame, app: &App) {
     let chunks = Layout::default()
@@ -34,26 +34,31 @@ pub fn render(frame: &mut Frame, app: &App) {
 
 fn render_nav(frame: &mut Frame, app: &App, area: Rect) {
     let nav = Paragraph::new(Line::from(vec![
-            nav_span("1:Home", app.page == Page::Home),
-            Span::raw(" "),
-            nav_span("2:Dealing", app.page == Page::Dealing),
-            Span::raw(" "),
-            nav_span("3:Bidding", app.page == Page::Bidding),
-            Span::raw(" "),
-            nav_span("4:TrickPlay", app.page == Page::TrickPlay),
-            Span::raw(" "),
-            nav_span("5:Scoring", app.page == Page::Scoring),
-            Span::raw(" "),
-            nav_span("6:GameOver", app.page == Page::GameOver),
-            Span::raw(" | q:Quit"),
+        nav_span("1:Home", app.page == Page::Home),
+        Span::raw(" "),
+        nav_span("2:Dealing", app.page == Page::Dealing),
+        Span::raw(" "),
+        nav_span("3:Bidding", app.page == Page::Bidding),
+        Span::raw(" "),
+        nav_span("4:TrickPlay", app.page == Page::TrickPlay),
+        Span::raw(" "),
+        nav_span("5:Scoring", app.page == Page::Scoring),
+        Span::raw(" "),
+        nav_span("6:GameOver", app.page == Page::GameOver),
+        Span::raw(" | q:Quit"),
     ]))
-        .block(Block::default().borders(Borders::ALL).title("Nav"));
+    .block(Block::default().borders(Borders::ALL).title("Nav"));
     frame.render_widget(nav, area);
 }
 
-fn nav_span(label: &str, active: bool) -> Span {
+fn nav_span(label: &str, active: bool) -> Span<'_> {
     if active {
-        Span::styled(label, Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
+        Span::styled(
+            label,
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        )
     } else {
         Span::raw(label)
     }
