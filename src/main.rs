@@ -8,7 +8,7 @@ mod tui;
 
 use crossterm::{
     ExecutableCommand,
-    event::{self, Event, KeyCode, KeyEvent},
+    event::{self, Event},
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use std::io;

@@ -1,6 +1,6 @@
 // src/app.rs
 
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Page {
@@ -16,6 +16,8 @@ pub struct App {
     pub page: Page,
     pub tick_count: u64,
     pub should_quit: bool,
+    pub home_selection: usize,
+    pub room_code: String,
 }
 
 impl App {
@@ -24,6 +26,8 @@ impl App {
             page: Page::Home,
             tick_count: 0,
             should_quit: false,
+            home_selection: 0,
+            room_code: String::new(),
         }
     }
 
@@ -31,7 +35,38 @@ impl App {
         self.tick_count += 1;
     }
 
-    pub fn on_key(&mut self, key: KeyEvent) {
+    fn home_menu_up(&mut self) {
+        self.home_selection = (self.home_selection + 2) % 3;
+    }
+
+    fn home_menu_down(&mut self) {
+        self.home_selection = (self.home_selection + 1) % 3
+    }
+
+    fn home_handler(&mut self) {}
+
+    fn on_key_home(&mut self, key: KeyEvent) {
+        match key.code {
+            KeyCode::Up => self.home_menu_up(),
+            KeyCode::Down => self.home_menu_down(),
+            KeyCode::Char(c) => {
+                if self.home_selection == 1 {
+                    self.room_code.push(c);
+                } else if c == 'q' {
+                    self.should_quit = true;
+                }
+            }
+            KeyCode::Backspace => {
+                if self.home_selection == 1 {
+                    self.room_code.pop();
+                }
+            }
+            KeyCode::Enter => self.home_handler(),
+            _ => {}
+        }
+    }
+
+    fn on_key_global(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Char('q') => self.should_quit = true,
             KeyCode::Char('1') => self.page = Page::Home,
@@ -43,6 +78,18 @@ impl App {
             _ => {}
         }
     }
+
+    pub fn on_key(&mut self, key: KeyEvent) {
+        if key.kind != KeyEventKind::Press {
+            return;
+        }
+
+        match self.page {
+            Page::Home => {
+                self.on_key_home(key);
+                self.on_key_global(key);
+            }
+            _ => self.on_key_global(key),
+        }
+    }
 }
-
-
