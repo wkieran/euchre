@@ -1,69 +1,148 @@
 // src/game/controller.rs
-use super::state::{GameState, Phase, BidAction};
 use super::card::{Card, Suit};
-use super::player::{Team};
+use super::player::Team;
+use super::state::{BidAction, GameState, Phase};
+use async_trait::async_trait;
 
 pub enum GameAction {
-    //Bidding
-    Pass,
-    OrderUp,
-    OrderUpAlone,
-    CallSuit(Suit),
-    CallSuitAlone(Suit),
-    //Discarding
+    Bid(BidAction),
     Discard(usize),
-    //Stuck (dealer)
-    StuckCall(Suit),
-    //Playing
     PlayCard(usize),
 }
 
+#[derive(Clone)]
 pub enum GameEvent {
     NewHand,
     BiddingStarted { kitty: Card },
+    PhaseChanged(Phase),
     TrickComplete { winner: usize },
     HandComplete { scores: [usize; 2] },
-    GameOver { winner: Team},
-    PhaseChanged(Phase),
+    GameOver { winner: Team },
+}
+
+pub struct GameView {
+    pub seat_id: usize,
+    pub hand: Vec<Card>,
+    pub current_phase: Phase,
+    pub current_player: usize,
+    pub current_bidder: usize,
+    pub bidding_round: usize,
+    pub kitty: Option<Card>,
+    pub trump: Option<Suit>,
+    pub tricks_won: [usize; 2],
+    pub team_scores: [usize; 2],
+    pub dealer: usize,
+}
+
+#[async_trait]
+pub trait Player: Send {
+    async fn act(&mut self, view: &GameView) -> GameAction;
+    async fn on_event(&mut self, _event: &GameEvent) {}
 }
 
 pub struct GameController {
     pub state: GameState,
+    players: [Box<dyn Player>; 4],
 }
 
 impl GameController {
-    pub fn new() -> Self {
-        Self { state: GameState::new() }
+    pub fn new(players: [Box<dyn Player>; 4]) -> Self {
+        Self {
+            state: GameState::new(),
+            players,
+        }
     }
 
-    pub fn apply(&mut self, action: GameAction) -> Option<GameEvent> {
-        // TODO : add some sort of player validation before applying actions.
-        // each client should hold a secret token assigned to each seat at the 
-        // beginning of the game.
-        match action {
-            GameAction::Pass | GameAction::OrderUp | _ => {
-                self.state.submit_bid(BidAction::Pass);
-                Some(GameEvent::PhaseChanged(self.state.current_phase))
-            }
-            GameAction::PlayCard(i) => {
-                self.state.play_card(self.state.current_player, i);
-                self.state.handle_trick();
+    pub async fn run(&mut self) -> Team {
+        self.state.new_deal();
+        self.state.start_bidding();
+        self.broadcast(GameEvent::BiddingStarted {
+            kitty: self.state.kitty.unwrap(),
+        })
+        .await;
 
-                match self.state.current_phase {
-                    Phase::Scoring => {
-                        self.state.score_round();
-                        if self.state.current_phase == Phase::GameOver {
-                            Some(GameEvent::GameOver { winner: Team::East})
-                        } else {
-                            self.state.new_deal();
-                            self.state.start_bidding();
-                            Some(GameEvent::NewHand)
-                        }
-                    }
-                    _ => Some(GameEvent::PhaseChanged(self.state.current_phase))
+        loop {
+            let events = self.step().await;
+            for event in &events {
+                self.broadcast(event.clone()).await;
+                if let GameEvent::GameOver { winner } = event {
+                    return *winner;
                 }
             }
         }
+    }
+
+    async fn step(&mut self) -> Vec<GameEvent> {
+        match self.state.current_phase {
+            Phase::Bidding | Phase::StuckDealer => {}
+            Phase::Discarding => {}
+            Phase::Playing => {}
+            Phase::Scoring => {}
+            Phase::Dealing | Phase::GameOver => {}
+        }
+        vec![]
+    }
+
+    pub fn apply(&mut self, action: GameAction) -> Vec<GameEvent> {
+        match action {
+            GameAction::Bid(bid) => {
+                self.state.submit_bid(bid);
+                vec![GameEvent::PhaseChanged(self.state.current_phase)]
+            }
+            GameAction::Discard(card_index) => {
+                self.state.submit_discard(card_index);
+                vec![GameEvent::PhaseChanged(self.state.current_phase)]
+            }
+            GameAction::PlayCard(card_index) => {
+                let tricks_before = self.state.tricks_won[0] + self.state.tricks_won[1];
+                let player_id = self.state.current_player;
+                self.state.play_card(player_id, card_index);
+                self.state.handle_trick();
+                let tricks_after = self.state.tricks_won[0] + self.state.tricks_won[1];
+
+                if self.state.current_phase == Phase::Scoring {
+                    self.state.score_round();
+                    if self.state.current_phase == Phase::GameOver {
+                        let winner = if self.state.team_scores[0] >= 10 {
+                            Team::East
+                        } else {
+                            Team::West
+                        };
+                        vec![GameEvent::GameOver { winner }]
+                    } else {
+                        self.state.new_deal();
+                        self.state.start_bidding();
+                        vec![GameEvent::NewHand]
+                    }
+                } else if tricks_after > tricks_before {
+                    vec![GameEvent::TrickComplete {
+                        winner: self.state.current_player,
+                    }]
+                } else {
+                    vec![GameEvent::PhaseChanged(self.state.current_phase)]
+                }
+            }
+        }
+    }
+
+    pub fn view_for(&self, seat: usize) -> GameView {
+        GameView {
+            seat_id: seat,
+            hand: self.state.players[seat].hand.clone(),
+            current_phase: self.state.current_phase,
+            current_player: self.state.current_player,
+            current_bidder: self.state.current_bidder,
+            bidding_round: self.state.bidding_round,
+            kitty: self.state.kitty,
+            trump: self.state.trump,
+            tricks_won: self.state.tricks_won,
+            team_scores: self.state.team_scores,
+            dealer: self.state.dealer,
+        }
+    }
+
+    async fn broadcast(&mut self, _event: GameEvent) {
+        todo!("yup");
     }
 }
 
@@ -74,35 +153,53 @@ mod tests {
     use crate::game::player::Team;
     use crate::game::state::Phase;
 
+    struct StubPlayer;
+
+    #[async_trait]
+    impl Player for StubPlayer {
+        async fn act(&mut self, _view: &GameView) -> GameAction {
+            unreachable!("StubPlayer should not be asked to act in unit tests")
+        }
+    }
+
+    fn stub_players() -> [Box<dyn Player>; 4] {
+        [
+            Box::new(StubPlayer),
+            Box::new(StubPlayer),
+            Box::new(StubPlayer),
+            Box::new(StubPlayer),
+        ]
+    }
+
     fn setup_known_hand() -> GameController {
-        let mut controller = GameController::new();
+        let mut controller = GameController::new(stub_players());
         let state = &mut controller.state;
 
         state.players[0].hand.extend(vec![
             Card::new(Suit::Clubs, Rank::Ace),
             Card::new(Suit::Spades, Rank::Ace),
-            Card::new(Suit::Hearts, Rank::Jack), 
+            Card::new(Suit::Hearts, Rank::Jack),
             Card::new(Suit::Hearts, Rank::Nine),
             Card::new(Suit::Clubs, Rank::Jack),
         ]);
         state.players[1].hand.extend(vec![
             Card::new(Suit::Hearts, Rank::Ace),
             Card::new(Suit::Spades, Rank::Nine),
-            Card::new(Suit::Diamonds, Rank::Ace), 
+            Card::new(Suit::Diamonds, Rank::Ace),
             Card::new(Suit::Clubs, Rank::Queen),
             Card::new(Suit::Spades, Rank::Ten),
         ]);
         state.players[2].hand.extend(vec![
             Card::new(Suit::Spades, Rank::Queen),
             Card::new(Suit::Spades, Rank::Jack),
-            Card::new(Suit::Clubs, Rank::King), 
+            Card::new(Suit::Clubs, Rank::King),
             Card::new(Suit::Diamonds, Rank::Jack),
             Card::new(Suit::Hearts, Rank::King),
         ]);
         state.players[3].hand.extend(vec![
             Card::new(Suit::Diamonds, Rank::Nine),
             Card::new(Suit::Hearts, Rank::Queen),
-            Card::new(Suit::Hearts, Rank::Ten), 
+            Card::new(Suit::Hearts, Rank::Ten),
             Card::new(Suit::Diamonds, Rank::Queen),
             Card::new(Suit::Clubs, Rank::Ten),
         ]);
@@ -122,12 +219,14 @@ mod tests {
         controller.apply(GameAction::PlayCard(3));
         controller.apply(GameAction::PlayCard(2));
         controller.apply(GameAction::PlayCard(4));
-        let event = controller.apply(GameAction::PlayCard(0));
+        let events = controller.apply(GameAction::PlayCard(0));
 
-        assert!(matches!(event, Some(GameEvent::TrickComplete { winner: 0})));
+        assert_eq!(events.len(), 1);
+        assert!(matches!(events[0], GameEvent::TrickComplete { winner: 0 }));
         assert_eq!(controller.state.tricks_won, [1, 0]);
     }
 
+    #[test]
     fn test_full_hand_scores_correctly() {
         let mut controller = setup_known_hand();
 

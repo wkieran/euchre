@@ -1,5 +1,5 @@
-use std::fmt;
 use super::card::Card;
+use std::fmt;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 #[repr(usize)]
@@ -8,23 +8,21 @@ pub enum Team {
     West, // = 1
 }
 
+#[warn(unused_mut)]
 pub struct Player {
     id: usize,
     pub hand: Vec<Card>,
     pub team: Team,
-    is_dealer: bool,
-    tricks_won: usize,
     pub is_going_alone: bool,
 }
 
+#[warn(unused_mut)]
 impl Player {
     pub fn new(id: usize, team: Team) -> Self {
-        let mut player = Player {
+        let player = Player {
             id: id,
-            hand: vec!(),
+            hand: vec![],
             team: team,
-            is_dealer: false,
-            tricks_won: 0,
             is_going_alone: false,
         };
         player
@@ -45,4 +43,3 @@ impl fmt::Display for Player {
         Ok(())
     }
 }
-

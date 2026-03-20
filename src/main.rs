@@ -1,4 +1,4 @@
-use euchre::game::{Card, Suit, Rank, Trick, Player, Team, Deck};
+use euchre::game::Deck;
 
 fn main() {
     println!("Euchre!");
@@ -6,6 +6,4 @@ fn main() {
     for c in new_deck.cards {
         print!("{}, ", c);
     }
-    println!("");
 }
-

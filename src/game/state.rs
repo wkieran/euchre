@@ -1,6 +1,6 @@
-use super::card::{Card, Rank, Suit, effective_suit};
-use super::player::{Player, Team};
+use super::card::{Card, Suit, effective_suit};
 use super::deck::Deck;
+use super::player::{Player, Team};
 use super::trick::Trick;
 
 // === Enums ===
@@ -24,7 +24,7 @@ pub enum BidAction {
 
 // === Structs ===
 pub struct GameState {
-    // players, deck, current trick, tricks won, trump, kitty, 
+    // players, deck, current trick, tricks won, trump, kitty,
     pub players: [Player; 4],
     deck: Deck,
     current_trick: Trick,
@@ -34,20 +34,26 @@ pub struct GameState {
     // current phase, current player, dealer
     pub current_phase: Phase,
     pub current_player: usize,
-    dealer: usize,
+    pub dealer: usize,
     // team scores, maker team
     pub team_scores: [usize; 2],
     pub maker_team: Option<Team>,
     // bidding state
-    bidding_round: usize,
-    current_bidder: usize,
+    pub bidding_round: usize,
+    pub current_bidder: usize,
     bids_passed: usize,
 }
 
 // === Impl Blocks ===
+impl Default for GameState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GameState {
     pub fn new() -> Self {
-        let mut game_state = GameState{
+        let game_state = GameState {
             players: [
                 Player::new(0, Team::East),
                 Player::new(1, Team::West),
@@ -74,11 +80,17 @@ impl GameState {
     // --- dealing ---
     pub fn new_deal(&mut self) {
         self.deck.shuffle();
+        self.tricks_won = [0, 0];
+        self.maker_team = None;
+        for player in self.players.iter_mut() {
+            player.hand.clear();
+            player.is_going_alone = false;
+        }
         // when dealing, to make it 2-3-2-3 make +1 based on i % 2
         // 0:0-2, 1:3:4, 2:5-7, 3:8-9
         for x in 0..2 {
             for (i, player) in self.players.iter_mut().enumerate() {
-                let count = if x == 0 { 2 + (i % 2) } else { 3 - (i % 2)};
+                let count = if x == 0 { 2 + (i % 2) } else { 3 - (i % 2) };
                 let new_cards = self.deck.deal(count).unwrap();
                 player.hand.extend(new_cards);
             }
@@ -90,6 +102,7 @@ impl GameState {
         self.kitty = self.deck.reveal_top();
         self.bidding_round = 1;
         self.current_bidder = (self.dealer + 1) % 4;
+        self.current_phase = Phase::Bidding;
     }
 
     pub fn submit_bid(&mut self, bid: BidAction) {
@@ -103,26 +116,33 @@ impl GameState {
                     self.current_phase = Phase::StuckDealer;
                 }
                 self.current_bidder = (self.current_bidder + 1) % 4;
-            },
+            }
             BidAction::OrderUp | BidAction::OrderUpAlone => {
                 assert_eq!(self.bidding_round, 1, "cannot order up in round 2!!");
                 self.trump = Some(self.kitty.unwrap().suit);
                 self.set_maker_and_adavance(matches!(bid, BidAction::OrderUpAlone));
                 self.dealer_pickup();
-
-            },
+            }
             BidAction::CallSuit(suit) | BidAction::CallSuitAlone(suit) => {
                 assert_eq!(self.bidding_round, 2, "Cannot call suit in round 1!!");
-                assert_ne!(suit, self.kitty.unwrap().suit, "Cannot call the same suit as Kitty!!");
+                assert_ne!(
+                    suit,
+                    self.kitty.unwrap().suit,
+                    "Cannot call the same suit as Kitty!!"
+                );
                 self.trump = Some(suit);
                 self.set_maker_and_adavance(matches!(bid, BidAction::CallSuitAlone(_)));
                 self.current_phase = Phase::Playing;
-            },
+            }
         }
     }
 
     fn set_maker_and_adavance(&mut self, going_alone: bool) {
-        self.maker_team = Some(if self.current_bidder % 2 == 0 { Team::East } else { Team::West });
+        self.maker_team = Some(if self.current_bidder % 2 == 0 {
+            Team::East
+        } else {
+            Team::West
+        });
         if going_alone {
             self.players[self.current_bidder].is_going_alone = true;
         }
@@ -134,14 +154,14 @@ impl GameState {
         self.current_phase = Phase::Discarding;
     }
 
-    fn submit_discard(&mut self, card_index: usize) {
+    pub fn submit_discard(&mut self, card_index: usize) {
         assert_eq!(self.current_phase, Phase::Discarding);
         self.players[self.dealer].hand.remove(card_index);
         assert_eq!(self.players[self.dealer].hand.len(), 5);
         self.current_phase = Phase::Playing;
     }
 
-    fn submit_stuck_call(&mut self, suit: Suit) {
+    pub fn submit_stuck_call(&mut self, suit: Suit) {
         assert_eq!(self.current_phase, Phase::StuckDealer);
         assert_ne!(suit, self.kitty.unwrap().suit);
         self.trump = Some(suit);
@@ -151,15 +171,19 @@ impl GameState {
 
     // --- playing ---
     fn next_player(&mut self, from: usize) {
-    // Find who's sitting out: partner of the player going alone
-    let sitting_out = self.players.iter().position(|p| p.is_going_alone).map(|n| (n + 2) % 4);
+        // Find who's sitting out: partner of the player going alone
+        let sitting_out = self
+            .players
+            .iter()
+            .position(|p| p.is_going_alone)
+            .map(|n| (n + 2) % 4);
 
-    let mut next = (from + 1) % 4;
-    if sitting_out == Some(next) {
-        next = (from + 2) % 4;
+        let mut next = (from + 1) % 4;
+        if sitting_out == Some(next) {
+            next = (from + 2) % 4;
+        }
+        self.current_player = next;
     }
-    self.current_player = next;
-}
 
     pub fn play_card(&mut self, player_id: usize, card_index: usize) {
         assert!(player_id < 4);
@@ -168,31 +192,36 @@ impl GameState {
 
         let card_to_play = self.players[player_id].hand[card_index];
 
-        if self.current_trick.played_cards.len() > 0 { // if the current player is not the first in
-                                                       // the trick
+        if self.current_trick.played_cards.len() > 0 {
+            // if the current player is not the first in
+            // the trick
             let mut has_lead_suit = false;
-            for (i, card) in self.players[player_id].hand.iter().enumerate() {
+            for (_, card) in self.players[player_id].hand.iter().enumerate() {
                 let card_effective_suit = effective_suit(*card, self.trump.unwrap());
                 if card_effective_suit == self.current_trick.lead_suit.unwrap() {
                     has_lead_suit = true;
                 }
             }
 
-            let playing_non_lead_suit = effective_suit(card_to_play, self.trump.unwrap()) != self.current_trick.lead_suit.unwrap();
+            let playing_non_lead_suit = effective_suit(card_to_play, self.trump.unwrap())
+                != self.current_trick.lead_suit.unwrap();
             if playing_non_lead_suit && has_lead_suit {
                 panic!("Player is trying to reneg!");
             }
         }
-        
+
         self.players[player_id].hand.remove(card_index);
-        self.current_trick.play_card(player_id, card_to_play, self.trump.unwrap());
+        self.current_trick
+            .play_card(player_id, card_to_play, self.trump.unwrap());
     }
 
     pub fn handle_trick(&mut self) {
-        if !self.current_trick.is_complete(self.players.iter().any(|p| p.is_going_alone)) {
+        if !self
+            .current_trick
+            .is_complete(self.players.iter().any(|p| p.is_going_alone))
+        {
             self.next_player(self.current_player);
-        }
-        else {
+        } else {
             let winner = self.current_trick.determine_winner(self.trump.unwrap());
             let winning_team = winner % 2;
             self.tricks_won[winning_team] += 1;
@@ -204,30 +233,34 @@ impl GameState {
             }
         }
     }
-    
+
     // --- scoring ---
     // count tricks, score points
     pub fn score_round(&mut self) {
         let maker = self.maker_team.unwrap() as usize;
         let defender = 1 - maker;
         let maker_wins = self.tricks_won[maker];
-        let defender_wins = self.tricks_won[defender];
+        let _defender_wins = self.tricks_won[defender];
 
         match maker_wins {
             5 => {
-                if self.players.iter().any(|p| p.is_going_alone && p.team as usize == maker) {
+                if self
+                    .players
+                    .iter()
+                    .any(|p| p.is_going_alone && p.team as usize == maker)
+                {
                     self.team_scores[maker] += 4;
                 } else {
                     self.team_scores[maker] += 2;
                 }
-            },
+            }
             3..=4 => {
                 self.team_scores[maker] += 1;
-            },
+            }
             0..=2 => {
                 self.team_scores[defender] += 2;
             }
-            _ => unreachable!()
+            _ => unreachable!(),
         }
         if self.team_scores[0] >= 10 || self.team_scores[1] >= 10 {
             self.current_phase = Phase::GameOver;
@@ -240,6 +273,7 @@ impl GameState {
 
 #[cfg(test)]
 mod tests {
+    use super::super::card::Rank;
     use super::*;
 
     #[test]
@@ -279,21 +313,21 @@ mod tests {
 
     #[test]
     fn test_new_hand() {
-        let mut game_state =  GameState::new();
+        let mut game_state = GameState::new();
 
         let player_0_cards = vec![
             Card::new(Suit::Clubs, Rank::Ace),
             Card::new(Suit::Spades, Rank::Ace),
-            Card::new(Suit::Hearts, Rank::Jack), 
+            Card::new(Suit::Hearts, Rank::Jack),
             Card::new(Suit::Hearts, Rank::Nine),
             Card::new(Suit::Clubs, Rank::Jack),
         ];
         game_state.players[0].hand.extend(player_0_cards);
- 
+
         let player_1_cards = vec![
             Card::new(Suit::Hearts, Rank::Ace),
             Card::new(Suit::Spades, Rank::Nine),
-            Card::new(Suit::Diamonds, Rank::Ace), 
+            Card::new(Suit::Diamonds, Rank::Ace),
             Card::new(Suit::Clubs, Rank::Queen),
             Card::new(Suit::Spades, Rank::Ten),
         ];
@@ -302,7 +336,7 @@ mod tests {
         let player_2_cards = vec![
             Card::new(Suit::Spades, Rank::Queen),
             Card::new(Suit::Spades, Rank::Jack),
-            Card::new(Suit::Clubs, Rank::King), 
+            Card::new(Suit::Clubs, Rank::King),
             Card::new(Suit::Diamonds, Rank::Jack),
             Card::new(Suit::Hearts, Rank::King),
         ];
@@ -311,7 +345,7 @@ mod tests {
         let player_3_cards = vec![
             Card::new(Suit::Diamonds, Rank::Nine),
             Card::new(Suit::Hearts, Rank::Queen),
-            Card::new(Suit::Hearts, Rank::Ten), 
+            Card::new(Suit::Hearts, Rank::Ten),
             Card::new(Suit::Diamonds, Rank::Queen),
             Card::new(Suit::Clubs, Rank::Ten),
         ];
@@ -425,7 +459,7 @@ mod tests {
         assert_eq!(game_state.current_phase, Phase::Dealing);
     }
 
-    // TODO : 
+    // TODO :
     // - test_submit_discard()
     // - test entire bidding phase stuff
 }

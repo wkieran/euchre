@@ -7,8 +7,8 @@ pub struct Trick {
 
 impl Trick {
     pub fn new() -> Self {
-        let mut trick = Trick {
-            played_cards: vec!(),
+        let trick = Trick {
+            played_cards: vec![],
             lead_suit: None,
         };
         trick
@@ -20,22 +20,16 @@ impl Trick {
         }
         let new_played_cards = (player_id, card);
         self.played_cards.push(new_played_cards);
-
     }
 
     pub fn determine_winner(&self, trump_suit: Suit) -> usize {
-        println!("enter determine_winner:");
-        for (id, card) in self.played_cards.iter() {
-            print!("id:{},card:{}   ", id,  card);
-        }
-        println!("");
         let mut winner = self.played_cards[0];
         for (player_id, card) in &self.played_cards {
-           if card.beats(winner.1, trump_suit, self.lead_suit.unwrap()) {
-               winner = (*player_id, *card);
-           }
-       }
-       winner.0
+            if card.beats(winner.1, trump_suit, self.lead_suit.unwrap()) {
+                winner = (*player_id, *card);
+            }
+        }
+        winner.0
     }
 
     pub fn is_complete(&self, going_alone: bool) -> bool {
@@ -53,4 +47,3 @@ impl Trick {
         self.lead_suit = None;
     }
 }
-
