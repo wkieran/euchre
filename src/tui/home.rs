@@ -42,5 +42,5 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
         frame.render_widget(p, inner_chunks[1]);
     }
 
-    frame.render_stateful_widget(list, horizontal_chunks[0], &mut state);
+    frame.render_stateful_widget(list, inner_chunks[0], &mut state);
 }
