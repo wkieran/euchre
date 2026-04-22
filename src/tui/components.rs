@@ -7,6 +7,16 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Paragraph},
 };
 
+// Portrait card outer dimensions (including border).
+// Pixel ratio: CARD_W : CARD_H*2 = 8:10 = 4:5, close to a real card (5:7).
+pub const CARD_W: u16 = 8;
+pub const CARD_H: u16 = 5;
+
+// Landscape card outer dimensions — portrait rotated 90°.
+// Derived so the pixel ratio is identical: CARD_W_LAND : CARD_H_LAND*2 = 10:8 = 5:4.
+pub const CARD_W_LAND: u16 = CARD_H * 2; // 10
+pub const CARD_H_LAND: u16 = CARD_W / 2; // 4
+
 fn render_suit(suit: Suit) -> String {
     match suit {
         Suit::Spades => "♠".to_string(),
@@ -28,7 +38,7 @@ fn render_card(card: &Card) -> Span<'static> {
 }
 
 pub fn render_hand(hand: &[Card], selected: Option<usize>, area: Rect, frame: &mut Frame) {
-    let horizontal_chunks = Layout::horizontal(vec![Constraint::Length(7); hand.len()]).split(area);
+    let horizontal_chunks = Layout::horizontal(vec![Constraint::Length(CARD_W); hand.len()]).split(area);
 
     for (i, card) in hand.iter().enumerate() {
         let block = if selected == Some(i) {
@@ -46,17 +56,27 @@ pub fn render_hand(hand: &[Card], selected: Option<usize>, area: Rect, frame: &m
     }
 }
 
+pub fn render_card_back(area: Rect, frame: &mut Frame) {
+    frame.render_widget(Block::bordered(), area);
+}
+
 pub fn render_hand_back(count: usize, area: Rect, frame: &mut Frame) {
-    let chunks = Layout::horizontal(vec![Constraint::Length(7); count]).split(area);
-    for i in 0..count {
-        frame.render_widget(Block::bordered(), chunks[i]);
+    let chunks = Layout::horizontal(vec![Constraint::Length(CARD_W); count]).split(area);
+    for chunk in chunks.iter() {
+        render_card_back(*chunk, frame);
     }
 }
 
 pub fn render_hand_back_vertical(count: usize, area: Rect, frame: &mut Frame) {
-    let chunks = Layout::vertical(vec![Constraint::Length(5); count]).split(area);
-    for i in 0..count {
-        frame.render_widget(Block::bordered(), chunks[i]);
+    let centered = Layout::horizontal([
+        Constraint::Fill(1),
+        Constraint::Length(CARD_W_LAND),
+        Constraint::Fill(1),
+    ])
+    .split(area)[1];
+    let chunks = Layout::vertical(vec![Constraint::Length(CARD_H_LAND); count]).split(centered);
+    for chunk in chunks.iter() {
+        render_card_back(*chunk, frame);
     }
 }
 
