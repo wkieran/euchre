@@ -1,4 +1,5 @@
 mod bidding;
+mod components;
 mod dealing;
 mod gameover;
 mod home;
