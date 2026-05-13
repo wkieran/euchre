@@ -35,18 +35,18 @@ pub struct GameView {
 }
 
 #[async_trait]
-pub trait Player: Send {
+pub trait PlayerInput: Send {
     async fn act(&mut self, view: &GameView) -> GameAction;
     async fn on_event(&mut self, _event: &GameEvent) {}
 }
 
 pub struct GameController {
     pub state: GameState,
-    players: [Box<dyn Player>; 4],
+    players: [Box<dyn PlayerInput>; 4],
 }
 
 impl GameController {
-    pub fn new(players: [Box<dyn Player>; 4]) -> Self {
+    pub fn new(players: [Box<dyn PlayerInput>; 4]) -> Self {
         Self {
             state: GameState::new(),
             players,
@@ -73,14 +73,15 @@ impl GameController {
     }
 
     async fn step(&mut self) -> Vec<GameEvent> {
-        match self.state.current_phase {
-            Phase::Bidding | Phase::StuckDealer => {}
-            Phase::Discarding => {}
-            Phase::Playing => {}
-            Phase::Scoring => {}
-            Phase::Dealing | Phase::GameOver => {}
-        }
-        vec![]
+        let seat = match self.state.current_phase {
+            Phase::Bidding | Phase::StuckDealer => self.state.current_bidder,
+            Phase::Discarding => self.state.dealer,
+            Phase::Playing => self.state.current_player,
+            Phase::Scoring | Phase::Dealing | Phase::GameOver => return vec![],
+        };
+        let view = self.view_for(seat);
+        let action = self.players[seat].act(&view).await;
+        self.apply(action)
     }
 
     pub fn apply(&mut self, action: GameAction) -> Vec<GameEvent> {
@@ -141,8 +142,10 @@ impl GameController {
         }
     }
 
-    async fn broadcast(&mut self, _event: GameEvent) {
-        todo!("yup");
+    async fn broadcast(&mut self, event: GameEvent) {
+        for p in &mut self.players {
+            p.on_event(&event).await;
+        }
     }
 }
 
@@ -156,13 +159,13 @@ mod tests {
     struct StubPlayer;
 
     #[async_trait]
-    impl Player for StubPlayer {
+    impl PlayerInput for StubPlayer {
         async fn act(&mut self, _view: &GameView) -> GameAction {
             unreachable!("StubPlayer should not be asked to act in unit tests")
         }
     }
 
-    fn stub_players() -> [Box<dyn Player>; 4] {
+    fn stub_players() -> [Box<dyn PlayerInput>; 4] {
         [
             Box::new(StubPlayer),
             Box::new(StubPlayer),

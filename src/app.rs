@@ -1,6 +1,8 @@
 // src/app.rs
 
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
+use euchre::game::controller::{GameAction, GameEvent, GameView};
+use tokio::sync::mpsc;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Page {
@@ -18,21 +20,37 @@ pub struct App {
     pub should_quit: bool,
     pub home_selection: usize,
     pub room_code: String,
+    pub event_rx: mpsc::Receiver<GameEvent>,
+    pub action_tx: mpsc::Sender<GameAction>,
+    pub view: Option<GameView>,
 }
 
 impl App {
-    pub fn new() -> Self {
+    pub fn new(event_rx: mpsc::Receiver<GameEvent>, action_tx: mpsc::Sender<GameAction>) -> Self {
         Self {
             page: Page::Home,
             tick_count: 0,
             should_quit: false,
             home_selection: 0,
             room_code: String::new(),
+            event_rx,
+            action_tx,
+            view: None,
         }
     }
 
     pub fn on_tick(&mut self) {
         self.tick_count += 1;
+        while let Ok(event) = self.event_rx.try_recv() {
+            match event {
+                GameEvent::NewHand => self.page = Page::Dealing,
+                GameEvent::BiddingStarted { kitty: _ } => self.page = Page::Bidding,
+                GameEvent::PhaseChanged(_) => {}
+                GameEvent::TrickComplete { winner: _ } => {}
+                GameEvent::HandComplete { scores: _ } => self.page = Page::Scoring,
+                GameEvent::GameOver { winner: _ } => self.page = Page::GameOver,
+            }
+        }
     }
 
     fn home_menu_up(&mut self) {
