@@ -1,10 +1,6 @@
 use std::fmt;
 use strum_macros::EnumIter;
 
-// TODO :
-// - Team struct needs Copy, Clone for easier use
-// - Card struct might need Clone or Copy depending on ownership model
-
 #[derive(PartialOrd, PartialEq, Copy, Clone, EnumIter, Debug)]
 #[repr(u8)]
 pub enum Rank {
@@ -74,7 +70,6 @@ impl fmt::Display for Card {
     }
 }
 
-// TODO : test if this works if the right bower is checked
 pub fn effective_suit(card: Card, trump_suit: Suit) -> Suit {
     if card.rank == Rank::Jack && card.suit.same_color(&trump_suit) {
         return trump_suit;
@@ -91,16 +86,15 @@ fn effective_rank(card: Card, trump_suit: Suit) -> u8 {
             return 16;
         }
     }
-    return card.rank as u8;
+    card.rank as u8
 }
 
 impl Card {
     pub fn new(suit: Suit, rank: Rank) -> Self {
-        let new_card = Card {
+        Card {
             suit: suit,
             rank: rank,
-        };
-        new_card
+        }
     }
     pub fn beats(self, other_card: Card, trump_suit: Suit, lead_suit: Suit) -> bool {
         let self_is_trump = trump_suit == effective_suit(self, trump_suit);
@@ -134,7 +128,7 @@ impl Card {
             return self.rank > other_card.rank;
         }
 
-        return false;
+        false
     }
 }
 

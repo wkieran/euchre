@@ -8,11 +8,10 @@ pub struct Trick {
 
 impl Trick {
     pub fn new() -> Self {
-        let trick = Trick {
+        Trick {
             played_cards: vec![],
             lead_suit: None,
-        };
-        trick
+        }
     }
 
     pub fn play_card(&mut self, player_id: usize, card: Card, trump_suit: Suit) {
@@ -46,5 +45,11 @@ impl Trick {
     pub fn clear(&mut self) {
         self.played_cards.clear();
         self.lead_suit = None;
+    }
+}
+
+impl Default for Trick {
+    fn default() -> Self {
+        Self::new()
     }
 }
