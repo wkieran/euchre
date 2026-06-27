@@ -27,7 +27,7 @@ pub struct GameState {
     // players, deck, current trick, tricks won, trump, kitty,
     pub players: [Player; 4],
     deck: Deck,
-    current_trick: Trick,
+    pub current_trick: Trick,
     pub tricks_won: [usize; 2],
     pub trump: Option<Suit>,
     pub kitty: Option<Card>,

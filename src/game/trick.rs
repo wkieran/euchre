@@ -1,5 +1,6 @@
 use super::card::{Card, Suit, effective_suit};
 
+#[derive(Clone, Debug)]
 pub struct Trick {
     pub played_cards: Vec<(usize, Card)>, // player ID, Card played
     pub lead_suit: Option<Suit>,

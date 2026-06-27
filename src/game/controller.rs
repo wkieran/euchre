@@ -2,6 +2,7 @@
 use super::card::{Card, Suit};
 use super::player::Team;
 use super::state::{BidAction, GameState, Phase};
+use super::trick::Trick;
 use async_trait::async_trait;
 
 pub enum GameAction {
@@ -13,11 +14,23 @@ pub enum GameAction {
 #[derive(Clone)]
 pub enum GameEvent {
     NewHand,
-    BiddingStarted { kitty: Card },
+    BiddingStarted {
+        kitty: Card,
+    },
     PhaseChanged(Phase),
-    TrickComplete { winner: usize },
-    HandComplete { scores: [usize; 2] },
-    GameOver { winner: Team },
+    TrickComplete {
+        winner: usize,
+        cards_played: Trick,
+    },
+    HandComplete {
+        scores: [usize; 2],
+        tricks_won: [usize; 2],
+        maker_team: Team,
+        points_awarded: usize,
+    },
+    GameOver {
+        winner: Team,
+    },
 }
 
 pub struct GameView {
@@ -27,6 +40,7 @@ pub struct GameView {
     pub current_player: usize,
     pub current_bidder: usize,
     pub bidding_round: usize,
+    pub current_trick: Trick,
     pub kitty: Option<Card>,
     pub trump: Option<Suit>,
     pub tricks_won: [usize; 2],
@@ -98,26 +112,42 @@ impl GameController {
                 let tricks_before = self.state.tricks_won[0] + self.state.tricks_won[1];
                 let player_id = self.state.current_player;
                 self.state.play_card(player_id, card_index);
+                let trick_snapshot = self.state.current_trick.clone();
                 self.state.handle_trick();
                 let tricks_after = self.state.tricks_won[0] + self.state.tricks_won[1];
 
                 if self.state.current_phase == Phase::Scoring {
+                    let tricks_won = self.state.tricks_won;
+                    let maker_team = self.state.maker_team.unwrap();
+                    let scores_before = self.state.team_scores;
                     self.state.score_round();
+                    let scores_after = self.state.team_scores;
+                    let points_awarded = (scores_after[0] + scores_after[1])
+                        - (scores_before[0] + scores_before[1]);
+
+                    let hand_complete = GameEvent::HandComplete {
+                        scores: scores_after,
+                        tricks_won,
+                        maker_team,
+                        points_awarded,
+                    };
+
                     if self.state.current_phase == Phase::GameOver {
                         let winner = if self.state.team_scores[0] >= 10 {
                             Team::East
                         } else {
                             Team::West
                         };
-                        vec![GameEvent::GameOver { winner }]
+                        vec![hand_complete, GameEvent::GameOver { winner }]
                     } else {
                         self.state.new_deal();
                         self.state.start_bidding();
-                        vec![GameEvent::NewHand]
+                        vec![hand_complete, GameEvent::NewHand]
                     }
                 } else if tricks_after > tricks_before {
                     vec![GameEvent::TrickComplete {
                         winner: self.state.current_player,
+                        cards_played: trick_snapshot,
                     }]
                 } else {
                     vec![GameEvent::PhaseChanged(self.state.current_phase)]
@@ -134,6 +164,7 @@ impl GameController {
             current_player: self.state.current_player,
             current_bidder: self.state.current_bidder,
             bidding_round: self.state.bidding_round,
+            current_trick: self.state.current_trick.clone(),
             kitty: self.state.kitty,
             trump: self.state.trump,
             tricks_won: self.state.tricks_won,
@@ -225,7 +256,7 @@ mod tests {
         let events = controller.apply(GameAction::PlayCard(0));
 
         assert_eq!(events.len(), 1);
-        assert!(matches!(events[0], GameEvent::TrickComplete { winner: 0 }));
+        assert!(matches!(events[0], GameEvent::TrickComplete { winner: 0, .. }));
         assert_eq!(controller.state.tricks_won, [1, 0]);
     }
 

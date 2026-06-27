@@ -46,8 +46,16 @@ impl App {
                 GameEvent::NewHand => self.page = Page::Dealing,
                 GameEvent::BiddingStarted { kitty: _ } => self.page = Page::Bidding,
                 GameEvent::PhaseChanged(_) => {}
-                GameEvent::TrickComplete { winner: _ } => {}
-                GameEvent::HandComplete { scores: _ } => self.page = Page::Scoring,
+                GameEvent::TrickComplete {
+                    winner: _,
+                    cards_played: _,
+                } => {}
+                GameEvent::HandComplete {
+                    scores: _,
+                    maker_team: _,
+                    tricks_won: _,
+                    points_awarded: _,
+                } => self.page = Page::Scoring,
                 GameEvent::GameOver { winner: _ } => self.page = Page::GameOver,
             }
         }
