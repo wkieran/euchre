@@ -33,6 +33,7 @@ pub enum GameEvent {
     },
 }
 
+#[derive(Clone, Debug)]
 pub struct GameView {
     pub seat_id: usize,
     pub hand: Vec<Card>,
@@ -51,7 +52,7 @@ pub struct GameView {
 #[async_trait]
 pub trait PlayerInput: Send {
     async fn act(&mut self, view: &GameView) -> GameAction;
-    async fn on_event(&mut self, _event: &GameEvent) {}
+    async fn on_event(&mut self, _event: &GameEvent, _view: &GameView) {}
 }
 
 pub struct GameController {
@@ -174,8 +175,9 @@ impl GameController {
     }
 
     async fn broadcast(&mut self, event: GameEvent) {
-        for p in &mut self.players {
-            p.on_event(&event).await;
+        let views: Vec<GameView> = (0..4).map(|i| self.view_for(i)).collect();
+        for (i, p) in self.players.iter_mut().enumerate() {
+            p.on_event(&event, &views[i]).await;
         }
     }
 }

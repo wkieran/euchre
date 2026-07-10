@@ -20,13 +20,16 @@ pub struct App {
     pub should_quit: bool,
     pub home_selection: usize,
     pub room_code: String,
-    pub event_rx: mpsc::Receiver<GameEvent>,
+    pub event_rx: mpsc::Receiver<(GameEvent, GameView)>,
     pub action_tx: mpsc::Sender<GameAction>,
     pub view: Option<GameView>,
 }
 
 impl App {
-    pub fn new(event_rx: mpsc::Receiver<GameEvent>, action_tx: mpsc::Sender<GameAction>) -> Self {
+    pub fn new(
+        event_rx: mpsc::Receiver<(GameEvent, GameView)>,
+        action_tx: mpsc::Sender<GameAction>,
+    ) -> Self {
         Self {
             page: Page::Home,
             tick_count: 0,
@@ -41,7 +44,8 @@ impl App {
 
     pub fn on_tick(&mut self) {
         self.tick_count += 1;
-        while let Ok(event) = self.event_rx.try_recv() {
+        while let Ok((event, view)) = self.event_rx.try_recv() {
+            self.view = Some(view);
             match event {
                 GameEvent::NewHand => self.page = Page::Dealing,
                 GameEvent::BiddingStarted { kitty: _ } => self.page = Page::Bidding,
