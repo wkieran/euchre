@@ -53,7 +53,7 @@ impl Default for GameState {
 
 impl GameState {
     pub fn new() -> Self {
-        let game_state = GameState {
+        GameState {
             players: [
                 Player::new(0, Team::East),
                 Player::new(1, Team::West),
@@ -138,7 +138,7 @@ impl GameState {
     }
 
     fn set_maker_and_adavance(&mut self, going_alone: bool) {
-        self.maker_team = Some(if self.current_bidder % 2 == 0 {
+        self.maker_team = Some(if self.current_bidder.is_multiple_of(2) {
             Team::East
         } else {
             Team::West
@@ -192,11 +192,11 @@ impl GameState {
 
         let card_to_play = self.players[player_id].hand[card_index];
 
-        if self.current_trick.played_cards.len() > 0 {
+        if !self.current_trick.played_cards.is_empty() {
             // if the current player is not the first in
             // the trick
             let mut has_lead_suit = false;
-            for (_, card) in self.players[player_id].hand.iter().enumerate() {
+            for card in self.players[player_id].hand.iter() {
                 let card_effective_suit = effective_suit(*card, self.trump.unwrap());
                 if card_effective_suit == self.current_trick.lead_suit.unwrap() {
                     has_lead_suit = true;
@@ -280,7 +280,7 @@ mod tests {
     fn test_new_deal() {
         let mut game_state = GameState::new();
         game_state.new_deal();
-        for (_, player) in game_state.players.iter().enumerate() {
+        for player in game_state.players.iter() {
             println!("{}", player);
             assert_eq!(player.hand.len(), 5);
         }

@@ -15,7 +15,7 @@ impl Trick {
     }
 
     pub fn play_card(&mut self, player_id: usize, card: Card, trump_suit: Suit) {
-        if self.played_cards.len() == 0 {
+        if self.played_cards.is_empty() {
             self.lead_suit = Some(effective_suit(card, trump_suit));
         }
         let new_played_cards = (player_id, card);

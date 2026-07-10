@@ -122,8 +122,8 @@ impl GameController {
                     let scores_before = self.state.team_scores;
                     self.state.score_round();
                     let scores_after = self.state.team_scores;
-                    let points_awarded = (scores_after[0] + scores_after[1])
-                        - (scores_before[0] + scores_before[1]);
+                    let points_awarded =
+                        (scores_after[0] + scores_after[1]) - (scores_before[0] + scores_before[1]);
 
                     let hand_complete = GameEvent::HandComplete {
                         scores: scores_after,
@@ -256,7 +256,10 @@ mod tests {
         let events = controller.apply(GameAction::PlayCard(0));
 
         assert_eq!(events.len(), 1);
-        assert!(matches!(events[0], GameEvent::TrickComplete { winner: 0, .. }));
+        assert!(matches!(
+            events[0],
+            GameEvent::TrickComplete { winner: 0, .. }
+        ));
         assert_eq!(controller.state.tricks_won, [1, 0]);
     }
 

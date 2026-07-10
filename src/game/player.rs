@@ -19,13 +19,12 @@ pub struct Player {
 #[warn(unused_mut)]
 impl Player {
     pub fn new(id: usize, team: Team) -> Self {
-        let player = Player {
-            id: id,
+        Player {
+            id,
             hand: vec![],
-            team: team,
+            team,
             is_going_alone: false,
-        };
-        player
+        }
     }
 }
 

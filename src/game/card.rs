@@ -91,10 +91,7 @@ fn effective_rank(card: Card, trump_suit: Suit) -> u8 {
 
 impl Card {
     pub fn new(suit: Suit, rank: Rank) -> Self {
-        Card {
-            suit: suit,
-            rank: rank,
-        }
+        Card { suit, rank }
     }
     pub fn beats(self, other_card: Card, trump_suit: Suit, lead_suit: Suit) -> bool {
         let self_is_trump = trump_suit == effective_suit(self, trump_suit);
