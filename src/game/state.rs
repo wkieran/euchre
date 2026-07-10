@@ -73,12 +73,12 @@ impl GameState {
             bidding_round: 0,
             current_bidder: 0,
             bids_passed: 0,
-        };
-        game_state
+        }
     }
 
     // --- dealing ---
     pub fn new_deal(&mut self) {
+        self.deck = Deck::new();
         self.deck.shuffle();
         self.tricks_won = [0, 0];
         self.maker_team = None;
@@ -101,6 +101,7 @@ impl GameState {
     pub fn start_bidding(&mut self) {
         self.kitty = self.deck.reveal_top();
         self.bidding_round = 1;
+        self.bids_passed = 0;
         self.current_bidder = (self.dealer + 1) % 4;
         self.current_phase = Phase::Bidding;
     }
