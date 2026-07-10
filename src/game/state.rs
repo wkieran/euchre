@@ -27,7 +27,7 @@ pub struct GameState {
     // players, deck, current trick, tricks won, trump, kitty,
     pub players: [Player; 4],
     deck: Deck,
-    current_trick: Trick,
+    pub current_trick: Trick,
     pub tricks_won: [usize; 2],
     pub trump: Option<Suit>,
     pub kitty: Option<Card>,
@@ -53,7 +53,7 @@ impl Default for GameState {
 
 impl GameState {
     pub fn new() -> Self {
-        let game_state = GameState {
+        GameState {
             players: [
                 Player::new(0, Team::East),
                 Player::new(1, Team::West),
@@ -73,12 +73,12 @@ impl GameState {
             bidding_round: 0,
             current_bidder: 0,
             bids_passed: 0,
-        };
-        game_state
+        }
     }
 
     // --- dealing ---
     pub fn new_deal(&mut self) {
+        self.deck = Deck::new();
         self.deck.shuffle();
         self.tricks_won = [0, 0];
         self.maker_team = None;
@@ -101,6 +101,7 @@ impl GameState {
     pub fn start_bidding(&mut self) {
         self.kitty = self.deck.reveal_top();
         self.bidding_round = 1;
+        self.bids_passed = 0;
         self.current_bidder = (self.dealer + 1) % 4;
         self.current_phase = Phase::Bidding;
     }
@@ -138,7 +139,7 @@ impl GameState {
     }
 
     fn set_maker_and_adavance(&mut self, going_alone: bool) {
-        self.maker_team = Some(if self.current_bidder % 2 == 0 {
+        self.maker_team = Some(if self.current_bidder.is_multiple_of(2) {
             Team::East
         } else {
             Team::West
@@ -192,11 +193,11 @@ impl GameState {
 
         let card_to_play = self.players[player_id].hand[card_index];
 
-        if self.current_trick.played_cards.len() > 0 {
+        if !self.current_trick.played_cards.is_empty() {
             // if the current player is not the first in
             // the trick
             let mut has_lead_suit = false;
-            for (_, card) in self.players[player_id].hand.iter().enumerate() {
+            for card in self.players[player_id].hand.iter() {
                 let card_effective_suit = effective_suit(*card, self.trump.unwrap());
                 if card_effective_suit == self.current_trick.lead_suit.unwrap() {
                     has_lead_suit = true;
@@ -280,7 +281,7 @@ mod tests {
     fn test_new_deal() {
         let mut game_state = GameState::new();
         game_state.new_deal();
-        for (_, player) in game_state.players.iter().enumerate() {
+        for player in game_state.players.iter() {
             println!("{}", player);
             assert_eq!(player.hand.len(), 5);
         }

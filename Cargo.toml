@@ -8,3 +8,10 @@ strum = "0.27"
 strum_macros = "0.27"
 rand = "0.9"
 async-trait = "0.1"
+ratatui = "0.29"
+crossterm = "0.29.0"
+tokio = { version = "1", features = ["full"] }
+
+[[bin]]
+name = "euchre-tui"
+path = "src/main.rs"

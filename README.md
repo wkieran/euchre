@@ -1,65 +1,44 @@
 # euchre
 
-## game controller
+A terminal Euchre game built in Rust with a ratatui TUI.
 
-### core data structures
-- card representation
-  - rank
-  - suit
-- hand
-- deck
-- trick
-- player state
-- game state
+## Build & Run
 
-### card comparison logic:
-The raw comparison logic will live in a method on Card. It will have the following signature:
-```
-card.beats(other_card, trump_suit, lead_suit) -> bool
-```
-This method will be called in a method on Trick. The Trick already knows the trump and lead suit so it only makes sense. The method will be:
-```
-trick.determine_winner().
-```
-Lastly, a method to determine a card's "effective suit" will be on Card, to dynamically check for the left bower:
-```
-effective_suit(card, trump) -> Suit
+```sh
+cargo build
+cargo run --bin euchre-tui
 ```
 
-### going alone logic
-need to think on this one.
+```sh
+cargo test
+```
 
-### randomness in shuffling
-Because it's fun, the random seed for deck shuffling will be sourced from millisecond time between the players readying-up. So for a 4 player game the 4 times will be XORed and logged.
+## Outstanding Work
 
-### playing interfaces
-There will need to be an interface between the methods that actually change gamestate/implement logic, and inputs from players. The interfaces into the game logic should be agnostic of what kind of player is playing (real human, bot). So we will have three layers:
-1. player input
-2. agnostic interface
-3. game update logic
-The game controller logic will be the one to decide whether moves are legal and will respond back to through the interface with a boolean error state and a message if an illegal play is attempted. This way the game controller can send messages back to players and players/clients don't have to interpret issues.
+Items in rough implementation order. Each entry notes where the issue was discovered.
 
-### testing 
+### TUI Integration
 
-#### category 1: card comparison & trump logic
-- [ ] ranking in non-trump suit
-- [ ] trump beats non-trump
-- [ ] right bower is highest trump
-- [ ] left bower recognition
-- [ ] following suit validation
+1. **Populate `App.view` from events** — `App.on_tick()` drains `event_rx` but never stores a `GameView`. Render functions can't show real game state until this is wired. _Discovered: architecture review, `app.rs:44`_
 
-#### category 2: trick winning logic
-- [ ] lead suit wins when no trump player
-- [ ] first trump played if only one
-- [ ] highest trump wins
+2. **Wire render functions to `App.view`** — `bidding.rs` and `trickplay.rs` ignore `app` entirely and draw hardcoded stub cards. Once `App.view` is populated these should read from it. _Discovered: architecture review, `tui/bidding.rs:17`, `tui/trickplay.rs:17`_
 
-#### category 3: bidding phase
-- [ ] all players pass on kitty
-- [ ] dealer forces to call in second round
-- [ ] player picks up kitty
+3. **Wire key input to `action_tx`** — `App.action_tx` is never called. Bidding and trick play pages need to send `GameAction`s back to the controller when the player makes a choice. Currently the human player awaits forever. _Discovered: architecture review, `app.rs:24`_
 
-#### category 4: scoring
-- [ ] making team gets 3+ tricks (1 pt)
-- [ ] making team gets all 5 tricks (2 pts)
-- [ ] defending team wins (2 pts)
-- [ ] going alone and winning 5 (4 pts)
+4. **Add render tests (TestBackend)** — zero tests exist for the TUI binary. Each page module should have a `#[cfg(test)]` block using `Terminal<TestBackend>` with a stub `App`. _Discovered: `cargo test` shows 0 tests in `euchre-tui`_
+
+### Game Logic
+
+5. **`submit_bid` test is incomplete** — `test_submit_bid` in `state.rs` has commented-out assertions and a TODO. The full bidding phase (round 2, stuck dealer, order-up) is untested at the state level. _Discovered: `cargo test`, `state.rs:292`_
+
+6. **`submit_discard` has no test** — called on every ordered-up hand but never directly tested. _Discovered: `state.rs:462` TODO comment_
+
+7. **`current_player` not reset between hands** — `new_deal()` and `start_bidding()` do not reset `current_player`. It carries over from the last trick winner of the previous hand. Likely correct by coincidence (lead goes to last trick winner) but should be explicit. _Discovered: tracing `test_debug_game_runs_to_completion` execution_
+
+### Features
+
+8. **Going alone TUI support** — `is_going_alone` and `going_alone` path exist in game logic but the TUI has no way to bid alone and no visual indication when a player is going alone.
+
+9. **Bot players** — `PassBot` and `DebugBot` are placeholder bots. A real bot needs basic heuristics (order up with a strong hand, lead trump, etc.)
+
+10. **Networked multiplayer** — `PlayerInput` trait is the correct seam; a `NetworkPlayerInput` would implement it. Architecture is ready but not built.

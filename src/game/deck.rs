@@ -1,7 +1,7 @@
-use super::card::{Card, Suit, Rank};
-use strum::IntoEnumIterator;
+use super::card::{Card, Rank, Suit};
 use rand::rng;
 use rand::seq::SliceRandom;
+use strum::IntoEnumIterator;
 
 #[derive(Debug, PartialEq)]
 pub struct Deck {
@@ -12,7 +12,7 @@ pub struct Deck {
 impl Deck {
     pub fn new() -> Self {
         // todo!("implement new deck");
-        let mut cards = vec!();
+        let mut cards = vec![];
         for suit in Suit::iter() {
             for rank in Rank::iter() {
                 cards.push(Card::new(suit, rank));
@@ -37,11 +37,17 @@ impl Deck {
     }
 }
 
+impl Default for Deck {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
     use super::*;
-    
+
     #[test]
     fn test_shuffling_is_random() {
         let mut new_deck = Deck::new();

@@ -1,5 +1,6 @@
 use super::card::{Card, Suit, effective_suit};
 
+#[derive(Clone, Debug)]
 pub struct Trick {
     pub played_cards: Vec<(usize, Card)>, // player ID, Card played
     pub lead_suit: Option<Suit>,
@@ -7,15 +8,14 @@ pub struct Trick {
 
 impl Trick {
     pub fn new() -> Self {
-        let trick = Trick {
+        Trick {
             played_cards: vec![],
             lead_suit: None,
-        };
-        trick
+        }
     }
 
     pub fn play_card(&mut self, player_id: usize, card: Card, trump_suit: Suit) {
-        if self.played_cards.len() == 0 {
+        if self.played_cards.is_empty() {
             self.lead_suit = Some(effective_suit(card, trump_suit));
         }
         let new_played_cards = (player_id, card);
@@ -45,5 +45,11 @@ impl Trick {
     pub fn clear(&mut self) {
         self.played_cards.clear();
         self.lead_suit = None;
+    }
+}
+
+impl Default for Trick {
+    fn default() -> Self {
+        Self::new()
     }
 }

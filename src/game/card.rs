@@ -1,10 +1,6 @@
 use std::fmt;
 use strum_macros::EnumIter;
 
-// TODO :
-// - Team struct needs Copy, Clone for easier use
-// - Card struct might need Clone or Copy depending on ownership model
-
 #[derive(PartialOrd, PartialEq, Copy, Clone, EnumIter, Debug)]
 #[repr(u8)]
 pub enum Rank {
@@ -42,9 +38,11 @@ impl Suit {
     fn same_color(&self, other: &Suit) -> bool {
         matches!(
             (self, other),
-            (Suit::Spades, Suit::Clubs) | (Suit::Clubs, Suit::Spades) |
-            (Suit::Hearts, Suit::Diamonds) | (Suit::Diamonds, Suit::Hearts)
-        ) 
+            (Suit::Spades, Suit::Clubs)
+                | (Suit::Clubs, Suit::Spades)
+                | (Suit::Hearts, Suit::Diamonds)
+                | (Suit::Diamonds, Suit::Hearts)
+        )
     }
 }
 
@@ -72,7 +70,6 @@ impl fmt::Display for Card {
     }
 }
 
-// TODO : test if this works if the right bower is checked
 pub fn effective_suit(card: Card, trump_suit: Suit) -> Suit {
     if card.rank == Rank::Jack && card.suit.same_color(&trump_suit) {
         return trump_suit;
@@ -81,24 +78,20 @@ pub fn effective_suit(card: Card, trump_suit: Suit) -> Suit {
 }
 
 fn effective_rank(card: Card, trump_suit: Suit) -> u8 {
-    if card.rank == Rank::Jack{
-        if card.suit == trump_suit{
+    if card.rank == Rank::Jack {
+        if card.suit == trump_suit {
             return 17;
         }
-        if card.suit.same_color(&trump_suit){
+        if card.suit.same_color(&trump_suit) {
             return 16;
         }
     }
-    return card.rank as u8;
+    card.rank as u8
 }
 
 impl Card {
     pub fn new(suit: Suit, rank: Rank) -> Self {
-        let new_card = Card {
-            suit: suit,
-            rank: rank,
-        };
-        new_card
+        Card { suit, rank }
     }
     pub fn beats(self, other_card: Card, trump_suit: Suit, lead_suit: Suit) -> bool {
         let self_is_trump = trump_suit == effective_suit(self, trump_suit);
@@ -132,7 +125,7 @@ impl Card {
             return self.rank > other_card.rank;
         }
 
-        return false;
+        false
     }
 }
 
@@ -149,7 +142,7 @@ mod tests {
         let trump_suit = Suit::Spades;
 
         let jack_spades = Card::new(Suit::Spades, Rank::Jack);
-        let ace_spades = Card::new(Suit::Spades,Rank::Ace);
+        let ace_spades = Card::new(Suit::Spades, Rank::Ace);
 
         assert!(jack_spades.beats(ace_spades, trump_suit, Suit::Hearts));
     }
@@ -210,7 +203,7 @@ mod tests {
         assert!(nine_spades.beats(ace_diamonds, trump_suit, lead_suit));
     }
 
-    // 
+    //
     // Lead suit tests
     //
     #[test]
@@ -235,7 +228,7 @@ mod tests {
         assert!(ten_hearts.beats(nine_hearts, trump_suit, lead_suit));
     }
 
-    // 
+    //
     // Edge case
     //
     #[test]
