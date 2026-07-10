@@ -155,6 +155,18 @@ fn run(
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
+    if std::env::args().any(|a| a == "--debug") {
+        let players: [Box<dyn PlayerInput>; 4] = [
+            Box::new(DebugBot { seat: 0 }),
+            Box::new(DebugBot { seat: 1 }),
+            Box::new(DebugBot { seat: 2 }),
+            Box::new(DebugBot { seat: 3 }),
+        ];
+        let mut controller = GameController::new(players);
+        controller.run().await;
+        return Ok(());
+    }
+
     let (human, action_tx, event_rx) = HumanPlayerInput::new();
 
     let players: [Box<dyn PlayerInput>; 4] = [
@@ -178,4 +190,23 @@ async fn main() -> io::Result<()> {
     io::stdout().execute(LeaveAlternateScreen)?;
 
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_debug_game_runs_to_completion() {
+        let players: [Box<dyn PlayerInput>; 4] = [
+            Box::new(DebugBot { seat: 0 }),
+            Box::new(DebugBot { seat: 1 }),
+            Box::new(DebugBot { seat: 2 }),
+            Box::new(DebugBot { seat: 3 }),
+        ];
+        let mut controller = GameController::new(players);
+        controller.run().await;
+        let scores = controller.state.team_scores;
+        assert!(scores[0] >= 10 || scores[1] >= 10);
+    }
 }
